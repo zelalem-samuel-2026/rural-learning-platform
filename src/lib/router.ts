@@ -18,7 +18,11 @@ function parseHash(hash: string): Route {
       return { name: 'dashboard' };
     case 'admin':
       if (parts[1] === 'lessons') return { name: 'admin-lessons' };
-      if (parts[1] === 'lesson') return { name: 'admin-lesson-edit', id: parts[2] };
+      if (parts[1] === 'lesson') {
+        return parts[2] === 'new'
+          ? { name: 'admin-lesson-edit' }
+          : { name: 'admin-lesson-edit', id: parts[2] };
+      }
       if (parts[1] === 'chapters') return { name: 'admin-chapters' };
       if (parts[1] === 'subjects') return { name: 'admin-subjects' };
       return { name: 'admin' };

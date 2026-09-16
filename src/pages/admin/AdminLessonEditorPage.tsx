@@ -47,7 +47,8 @@ const emptyLesson: Partial<LessonDB> = {
 export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLessonEditorPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
-  const isNew = !lessonId;
+  const editableLessonId = lessonId && lessonId !== 'new' ? lessonId : undefined;
+  const isNew = !editableLessonId;
   const [tab, setTab] = useState<Tab>('basic');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +59,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
-  const [currentId, setCurrentId] = useState<string | undefined>(lessonId);
+  const [currentId, setCurrentId] = useState<string | undefined>(editableLessonId);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const showToast = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
@@ -76,19 +77,23 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
         const gs = await fetchGrades();
         if (!active) return;
         setGrades(gs);
-        if (lessonId) {
-          const [l, qs] = await Promise.all([fetchLesson(lessonId), fetchQuizQuestions(lessonId)]);
+        if (editableLessonId) {
+          const [l, qs] = await Promise.all([fetchLesson(editableLessonId), fetchQuizQuestions(editableLessonId)]);
           if (!active || !l) return;
           setLesson(l);
           setQuestions(qs);
-          setCurrentId(lessonId);
+          setCurrentId(editableLessonId);
+        } else {
+          setLesson(emptyLesson);
+          setQuestions([]);
+          setCurrentId(undefined);
         }
       } catch { /* silent */ } finally {
         if (active) setLoading(false);
       }
     })();
     return () => { active = false; };
-  }, [lessonId]);
+  }, [editableLessonId]);
 
   // Load subjects when grade changes
   useEffect(() => {
@@ -122,16 +127,20 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
       if (currentId) {
         await updateLessonAdmin(currentId, payload);
       } else {
-        savedId = await createLessonAdmin(payload);
-        setCurrentId(savedId);
+        const createdLesson = await createLessonAdmin(payload);
+        savedId = createdLesson.id;
+        setLesson(createdLesson);
+        setCurrentId(createdLesson.id);
       }
       setLesson((prev) => ({ ...prev, status }));
       showToast(status === 'published' ? dict.admin.publishedSuccess : dict.admin.draftSaved);
-      if (status === 'published') {
+      if (!currentId && savedId) {
+        navigate({ name: 'admin-lesson-edit', id: savedId });
+      } else if (status === 'published') {
         navigate({ name: 'admin-lessons' });
       }
-    } catch {
-      showToast(dict.admin.error, 'error');
+    } catch (e: any) {
+      showToast(e?.message ?? dict.admin.error, 'error');
     } finally {
       setSaving(false);
     }

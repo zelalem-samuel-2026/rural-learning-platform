@@ -86,6 +86,7 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
 }
 
 export async function fetchLesson(id: string): Promise<LessonDB | null> {
+  if (id === 'new') throw new Error('Invalid lesson ID');
   const { data, error } = await supabase.from('lessons').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -93,6 +94,7 @@ export async function fetchLesson(id: string): Promise<LessonDB | null> {
 }
 
 export async function fetchQuizQuestions(lessonId: string): Promise<QuizQuestionDB[]> {
+  if (lessonId === 'new') throw new Error('Invalid lesson ID');
   const { data, error } = await supabase
     .from('quiz_questions').select('*')
     .eq('lesson_id', lessonId).order('order');
@@ -169,8 +171,8 @@ export async function fetchLessonsAdmin(filters?: { gradeId?: string; subjectId?
   return (data ?? []).map(parseLessonRow);
 }
 
-export async function createLessonAdmin(lesson: Partial<LessonDB>): Promise<string> {
-  const id = lesson.id || `lesson-${Date.now()}`;
+export async function createLessonAdmin(lesson: Partial<LessonDB>): Promise<LessonDB> {
+  const id = lesson.id && lesson.id !== 'new' ? lesson.id : crypto.randomUUID();
   const { data, error } = await supabase.from('lessons').insert({
     id,
     grade_id: lesson.grade_id,
@@ -193,13 +195,14 @@ export async function createLessonAdmin(lesson: Partial<LessonDB>): Promise<stri
     difficulty: lesson.difficulty ?? 'beginner',
     status: lesson.status ?? 'draft',
     updated_at: new Date().toISOString(),
-  }).select('id').single();
+  }).select('*').single();
   if (error) throw error;
   if (!data) throw new Error('Lesson insert returned no row — publish failed');
-  return data.id;
+  return parseLessonRow(data);
 }
 
 export async function updateLessonAdmin(id: string, patch: Partial<LessonDB>): Promise<void> {
+  if (id === 'new') throw new Error('Invalid lesson ID');
   const { data, error } = await supabase.from('lessons').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id).select('id');
   if (error) throw error;
   if (!data || data.length === 0) throw new Error('Lesson update affected no rows — save failed');
@@ -329,6 +332,7 @@ export async function fetchGradeSubjectMappings(): Promise<Record<string, string
 // --- Admin: Quiz Questions CRUD ---
 
 export async function createQuizQuestionAdmin(q: Partial<QuizQuestionDB>): Promise<string> {
+  if (q.lesson_id === 'new') throw new Error('Invalid lesson ID');
   const id = q.id || `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const { error } = await supabase.from('quiz_questions').insert({
     id,

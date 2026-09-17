@@ -136,12 +136,12 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Grade Selection — Phase 1 & 2 Polish */}
-      <section className="bg-slate-50/80 border-y border-slate-200/60 py-16 transition-all duration-300">
+      {/* Grade Selection — Subtle Background & Pop-out Cards */}
+      <section className="bg-ink-50 border-y border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold text-ink-900 mb-2">{dict.home.chooseGrade}</h2>
-            <p className="text-ink-500">{dict.home.chooseGradeHint}</p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold text-ink-900 mb-3">{dict.home.chooseGrade}</h2>
+            <p className="text-ink-600 max-w-lg mx-auto">{dict.home.chooseGradeHint}</p>
           </div>
 
           {loading ? (
@@ -157,17 +157,16 @@ export function HomePage({ navigate }: HomePageProps) {
                     key={g.id}
                     hoverable
                     onClick={() => navigate({ name: 'grade', id: g.id })}
-                    className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary-300 border border-slate-200/80 bg-white rounded-3xl cursor-pointer"
+                    className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                   >
                     {/* 3D Image Display or Fallback Icon */}
-                    <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ease-out">
+                    <div className="w-32 h-32 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-2">
                       {imgPath ? (
                         <img
                           src={imgPath}
                           alt={name}
-                          className="w-full h-full object-contain drop-shadow-md"
+                          className="w-full h-full object-contain drop-shadow-xl"
                           onError={(e) => {
-                            // If .webp fails, fallback to .png or default icon
                             const target = e.currentTarget;
                             if (target.src.endsWith('.webp')) {
                               target.src = target.src.replace('.webp', '.png');
@@ -181,18 +180,18 @@ export function HomePage({ navigate }: HomePageProps) {
                       )}
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <h3 className="text-2xl font-black text-ink-900 group-hover:text-primary-600 transition-colors">
                         {name}
                       </h3>
-                      <p className="text-sm font-medium text-ink-500">
+                      <p className="text-sm font-medium text-ink-500 bg-ink-50 px-3 py-1 rounded-full inline-block">
                         {subjects.length} Subjects • Interactive Practice
                       </p>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-4 py-2 rounded-full text-sm font-bold mt-2 group-hover:bg-primary-600 group-hover:text-white transition-all duration-200">
+                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-5 py-2.5 rounded-full text-sm font-bold mt-3 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-primary-500/30">
                       {dict.common.start}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
                     </span>
                   </Card>
                 );
@@ -202,22 +201,24 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Subjects */}
-      <section className="bg-ink-50 py-16">
+      {/* Subjects — Pure White Background */}
+      <section className="bg-white py-16 sm:py-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold text-ink-900 mb-2">{dict.home.subjectsTitle}</h2>
-            <p className="text-ink-500">{dict.home.subjectsSubtitle}</p>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-extrabold text-ink-900 mb-3">{dict.home.subjectsTitle}</h2>
+            <p className="text-ink-600 max-w-lg mx-auto">{dict.home.subjectsSubtitle}</p>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
             {subjects.length > 0 ? subjects.map((s) => (
-              <Card key={s.id} className="p-6 flex flex-col items-center text-center gap-3">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-soft`}>
-                  <SubjectIcon name={s.icon} className="w-6 h-6 text-white" />
+              <Card key={s.id} className="p-6 flex flex-col items-center text-center gap-4 hover:shadow-lg transition-shadow bg-white border border-ink-100">
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
+                  <SubjectIcon name={s.icon} className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-bold text-ink-900">{tr(s.name, lang)}</h3>
-                <p className="text-sm text-ink-500 leading-relaxed">{tr(s.description, lang)}</p>
+                <div>
+                  <h3 className="font-bold text-ink-900 text-lg mb-1">{tr(s.name, lang)}</h3>
+                  <p className="text-sm text-ink-500 leading-relaxed">{tr(s.description, lang)}</p>
+                </div>
               </Card>
             )) : (
               <div className="col-span-3 flex justify-center py-8"><Spinner /></div>

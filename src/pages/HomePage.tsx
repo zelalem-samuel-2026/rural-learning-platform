@@ -151,7 +151,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Grade Selection — Subtle Background & Pop-out Cards */}
+      {/* Grade Selection */}
       <section className="bg-ink-50 border-y border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -174,7 +174,6 @@ export function HomePage({ navigate }: HomePageProps) {
                     onClick={() => navigate({ name: 'grade', id: g.id })}
                     className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                   >
-                    {/* 3D Image Display or Fallback Icon */}
                     <div className="w-32 h-32 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-2">
                       {imgPath ? (
                         <img
@@ -216,7 +215,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Subjects — Subtle Background & 3D Interactive Cards */}
+      {/* Subjects */}
       <section className="bg-ink-50/70 border-b border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -236,7 +235,6 @@ export function HomePage({ navigate }: HomePageProps) {
                   onClick={() => navigate({ name: 'home' })}
                   className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                 >
-                  {/* 3D Subject Image or Fallback Icon */}
                   <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
                     {subImgPath ? (
                       <img
@@ -274,28 +272,83 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-ink-900 mb-2">{dict.home.whyTitle}</h2>
-          <p className="text-ink-500">{dict.home.whySubtitle}</p>
+      {/* Benefits — Interactive Background Image Cards */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-extrabold text-ink-900 mb-3">{dict.home.whyTitle}</h2>
+          <p className="text-ink-600 max-w-lg mx-auto">{dict.home.whySubtitle}</p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { icon: WifiOff, color: 'bg-success-100 text-success-600', title: dict.home.feature1Title, desc: dict.home.feature1Desc },
-            { icon: Accessibility, color: 'bg-primary-100 text-primary-600', title: dict.home.feature2Title, desc: dict.home.feature2Desc },
-            { icon: Brain, color: 'bg-accent-100 text-accent-600', title: dict.home.feature3Title, desc: dict.home.feature3Desc },
-            { icon: Languages, color: 'bg-warning-100 text-warning-600', title: dict.home.feature4Title, desc: dict.home.feature4Desc },
+            {
+              icon: WifiOff,
+              badgeBg: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/30',
+              title: dict.home.feature1Title,
+              desc: dict.home.feature1Desc,
+              bgImage: '/images/feature-offline.webp',
+            },
+            {
+              icon: Accessibility,
+              badgeBg: 'bg-blue-500/30 text-blue-200 border-blue-400/30',
+              title: dict.home.feature2Title,
+              desc: dict.home.feature2Desc,
+              bgImage: '/images/feature-simple.webp',
+            },
+            {
+              icon: Brain,
+              badgeBg: 'bg-purple-500/30 text-purple-200 border-purple-400/30',
+              title: dict.home.feature3Title,
+              desc: dict.home.feature3Desc,
+              bgImage: '/images/feature-feedback.webp',
+            },
+            {
+              icon: Languages,
+              badgeBg: 'bg-amber-500/30 text-amber-200 border-amber-400/30',
+              title: dict.home.feature4Title,
+              desc: dict.home.feature4Desc,
+              bgImage: '/images/feature-bilingual.webp',
+            },
           ].map((b) => {
             const Icon = b.icon;
             return (
-              <Card key={b.title} className="p-6 flex flex-col gap-3">
-                <div className={`w-12 h-12 rounded-xl ${b.color} flex items-center justify-center`}>
-                  <Icon className="w-6 h-6" />
+              <Card
+                key={b.title}
+                className="relative overflow-hidden min-h-[260px] p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl border border-ink-200/50 rounded-3xl cursor-pointer bg-ink-900"
+              >
+                {/* Background Image with Hover Zoom Animation */}
+                <div className="absolute inset-0 z-0 overflow-hidden">
+                  <img
+                    src={b.bgImage}
+                    alt={b.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src.endsWith('.webp')) {
+                        target.src = target.src.replace('.webp', '.png');
+                      }
+                    }}
+                  />
+                  {/* Dark Gradient Overlay for Readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink-950/95 via-ink-950/70 to-ink-950/40 group-hover:from-ink-950/90 transition-colors duration-300" />
                 </div>
-                <h3 className="font-bold text-ink-900">{b.title}</h3>
-                <p className="text-sm text-ink-500 leading-relaxed">{b.desc}</p>
+
+                {/* Card Header Icon */}
+                <div className="relative z-10">
+                  <div className={`w-12 h-12 rounded-2xl ${b.badgeBg} border backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+
+                {/* Card Text Content */}
+                <div className="relative z-10 space-y-1.5 text-left pt-6">
+                  <h3 className="font-extrabold text-white text-xl group-hover:text-primary-300 transition-colors">
+                    {b.title}
+                  </h3>
+                  <p className="text-sm text-ink-100 leading-relaxed font-normal drop-shadow-sm">
+                    {b.desc}
+                  </p>
+                </div>
               </Card>
             );
           })}

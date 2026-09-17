@@ -53,10 +53,12 @@ export function HomePage({ navigate }: HomePageProps) {
     return () => clearInterval(slideInterval);
   }, []);
 
-  // Grade Specific 3D Images mapping
+  // Grade Specific 3D Images mapping for Grades 5, 6, 7, 8
   const getGradeImage = (gradeName: string) => {
     if (gradeName.includes('5')) return '/images/grade-5.webp';
     if (gradeName.includes('6')) return '/images/grade-6.webp';
+    if (gradeName.includes('7')) return '/images/grade-7.webp';
+    if (gradeName.includes('8')) return '/images/grade-8.webp';
     return null;
   };
 
@@ -151,7 +153,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Grade Selection — Subtle Background & Pop-out Cards */}
+      {/* Grade Selection — Expanded for Grades 5, 6, 7 & 8 */}
       <section className="bg-ink-50 border-y border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -162,7 +164,7 @@ export function HomePage({ navigate }: HomePageProps) {
           {loading ? (
             <div className="flex justify-center py-12"><Spinner size="lg" /></div>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
               {grades.map((g) => {
                 const name = tr(g.name, lang);
                 const imgPath = getGradeImage(name);
@@ -172,10 +174,10 @@ export function HomePage({ navigate }: HomePageProps) {
                     key={g.id}
                     hoverable
                     onClick={() => navigate({ name: 'grade', id: g.id })}
-                    className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
+                    className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                   >
                     {/* 3D Image Display or Fallback Icon */}
-                    <div className="w-32 h-32 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-2">
+                    <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
                       {imgPath ? (
                         <img
                           src={imgPath}
@@ -199,14 +201,14 @@ export function HomePage({ navigate }: HomePageProps) {
                       <h3 className="text-2xl font-black text-ink-900 group-hover:text-primary-600 transition-colors">
                         {name}
                       </h3>
-                      <p className="text-sm font-medium text-ink-500 bg-ink-50 px-3 py-1 rounded-full inline-block">
-                        {subjects.length} Subjects • Interactive Practice
+                      <p className="text-xs font-medium text-ink-500 bg-ink-50 px-2.5 py-1 rounded-full inline-block">
+                        {subjects.length} Subjects • Practice
                       </p>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-5 py-2.5 rounded-full text-sm font-bold mt-3 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-primary-500/30">
+                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-4 py-2 rounded-full text-xs font-bold mt-2 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-primary-500/30">
                       {dict.common.start}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
                     </span>
                   </Card>
                 );
@@ -216,7 +218,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Subjects — Subtle Background & 3D Interactive Cards */}
+      {/* Subjects */}
       <section className="bg-ink-50/70 border-b border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -236,7 +238,6 @@ export function HomePage({ navigate }: HomePageProps) {
                   onClick={() => navigate({ name: 'home' })}
                   className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                 >
-                  {/* 3D Subject Image or Fallback Icon */}
                   <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
                     {subImgPath ? (
                       <img
@@ -274,7 +275,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Benefits — Interactive Background Image Cards */}
+      {/* Benefits */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-extrabold text-ink-900 mb-3">{dict.home.whyTitle}</h2>
@@ -318,7 +319,6 @@ export function HomePage({ navigate }: HomePageProps) {
                 key={b.title}
                 className="relative overflow-hidden min-h-[260px] p-6 flex flex-col justify-between group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl border border-ink-200/50 rounded-3xl cursor-pointer bg-ink-900"
               >
-                {/* Background Image with Hover Zoom Animation */}
                 <div className="absolute inset-0 z-0 overflow-hidden">
                   <img
                     src={b.bgImage}
@@ -331,18 +331,15 @@ export function HomePage({ navigate }: HomePageProps) {
                       }
                     }}
                   />
-                  {/* Dark Gradient Overlay for Readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-ink-950/95 via-ink-950/70 to-ink-950/40 group-hover:from-ink-950/90 transition-colors duration-300" />
                 </div>
 
-                {/* Card Header Icon */}
                 <div className="relative z-10">
                   <div className={`w-12 h-12 rounded-2xl ${b.badgeBg} border backdrop-blur-md flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
                     <Icon className="w-6 h-6 text-white" />
                   </div>
                 </div>
 
-                {/* Card Text Content */}
                 <div className="relative z-10 space-y-1.5 text-left pt-6">
                   <h3 className="font-extrabold text-white text-xl group-hover:text-primary-300 transition-colors">
                     {b.title}
@@ -357,11 +354,9 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* CTA — Interactive 3D Background with Glassmorphism */}
+      {/* CTA */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
         <div className="relative rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-2xl border border-ink-200/20">
-          
-          {/* Background Image with Hover Zoom Animation */}
           <div className="absolute inset-0 z-0">
             <img
               src="/images/cta-bg.webp"
@@ -374,11 +369,9 @@ export function HomePage({ navigate }: HomePageProps) {
                 }
               }}
             />
-            {/* Dark Overlay for text readability */}
             <div className="absolute inset-0 bg-ink-950/50 group-hover:bg-ink-950/40 transition-colors duration-500" />
           </div>
 
-          {/* Foreground Content with Glass Effect */}
           <div className="relative z-10 flex flex-col items-center justify-center p-8 sm:p-16 min-h-[350px]">
             <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 sm:p-12 rounded-3xl shadow-2xl max-w-2xl w-full text-center transform group-hover:-translate-y-2 transition-transform duration-500">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 drop-shadow-lg">
@@ -388,11 +381,8 @@ export function HomePage({ navigate }: HomePageProps) {
                 {dict.home.ctaSubtitle}
               </p>
               
-              {/* Glowing Interactive Button */}
               <div className="inline-block relative">
-                {/* Outer Glow Effect */}
                 <div className="absolute inset-0 bg-primary-400 rounded-full blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
-                
                 <Button
                   size="lg"
                   className="relative bg-white text-primary-700 hover:bg-primary-50 px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
@@ -404,7 +394,6 @@ export function HomePage({ navigate }: HomePageProps) {
               </div>
             </div>
           </div>
-
         </div>
       </section>
     </div>

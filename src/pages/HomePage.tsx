@@ -151,7 +151,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Grade Selection */}
+      {/* Grade Selection — Subtle Background & Pop-out Cards */}
       <section className="bg-ink-50 border-y border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -174,6 +174,7 @@ export function HomePage({ navigate }: HomePageProps) {
                     onClick={() => navigate({ name: 'grade', id: g.id })}
                     className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                   >
+                    {/* 3D Image Display or Fallback Icon */}
                     <div className="w-32 h-32 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-2">
                       {imgPath ? (
                         <img
@@ -215,7 +216,7 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Subjects */}
+      {/* Subjects — Subtle Background & 3D Interactive Cards */}
       <section className="bg-ink-50/70 border-b border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
@@ -235,6 +236,7 @@ export function HomePage({ navigate }: HomePageProps) {
                   onClick={() => navigate({ name: 'home' })}
                   className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
                 >
+                  {/* 3D Subject Image or Fallback Icon */}
                   <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
                     {subImgPath ? (
                       <img
@@ -355,23 +357,54 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* CTA — Interactive 3D Background with Glassmorphism */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-16">
-        <div className="relative bg-gradient-to-br from-primary-500 to-primary-700 rounded-3xl p-8 sm:p-12 text-center overflow-hidden">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-          <div className="absolute bottom-0 left-0 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
-          <div className="relative">
-            <h2 className="text-3xl font-extrabold text-white mb-2">{dict.home.ctaTitle}</h2>
-            <p className="text-primary-50 mb-6 max-w-lg mx-auto">{dict.home.ctaSubtitle}</p>
-            <Button
-              size="lg"
-              className="bg-white text-primary-700 hover:bg-primary-50"
-              onClick={() => navigate({ name: 'home' })}
-              rightIcon={<ArrowRight className="w-5 h-5" />}
-            >
-              {dict.home.ctaButton}
-            </Button>
+        <div className="relative rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-2xl border border-ink-200/20">
+          
+          {/* Background Image with Hover Zoom Animation */}
+          <div className="absolute inset-0 z-0">
+            <img
+              src="/images/cta-bg.webp"
+              alt="Start Learning"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (target.src.endsWith('.webp')) {
+                  target.src = target.src.replace('.webp', '.png');
+                }
+              }}
+            />
+            {/* Dark Overlay for text readability */}
+            <div className="absolute inset-0 bg-ink-950/50 group-hover:bg-ink-950/40 transition-colors duration-500" />
           </div>
+
+          {/* Foreground Content with Glass Effect */}
+          <div className="relative z-10 flex flex-col items-center justify-center p-8 sm:p-16 min-h-[350px]">
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 sm:p-12 rounded-3xl shadow-2xl max-w-2xl w-full text-center transform group-hover:-translate-y-2 transition-transform duration-500">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4 drop-shadow-lg">
+                {dict.home.ctaTitle}
+              </h2>
+              <p className="text-lg text-primary-50 mb-8 max-w-lg mx-auto drop-shadow-md">
+                {dict.home.ctaSubtitle}
+              </p>
+              
+              {/* Glowing Interactive Button */}
+              <div className="inline-block relative">
+                {/* Outer Glow Effect */}
+                <div className="absolute inset-0 bg-primary-400 rounded-full blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
+                
+                <Button
+                  size="lg"
+                  className="relative bg-white text-primary-700 hover:bg-primary-50 px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                  onClick={() => navigate({ name: 'home' })}
+                  rightIcon={<ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform" />}
+                >
+                  {dict.home.ctaButton}
+                </Button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
     </div>

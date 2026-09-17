@@ -45,7 +45,7 @@ export function HomePage({ navigate }: HomePageProps) {
     return () => { active = false; };
   }, []);
 
-  // Carousel Auto-Slide Effect (በየ 4 ሰከንዱ እንዲቀየር)
+  // Carousel Auto-Slide Effect
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setCurrentSlide((prev) => (prev === 1 ? 0 : 1));
@@ -53,9 +53,16 @@ export function HomePage({ navigate }: HomePageProps) {
     return () => clearInterval(slideInterval);
   }, []);
 
+  // Grade Specific 3D Images mapping
+  const getGradeImage = (gradeName: string) => {
+    if (gradeName.includes('5')) return '/images/grade-5.webp';
+    if (gradeName.includes('6')) return '/images/grade-6.webp';
+    return null;
+  };
+
   return (
     <div className="animate-fade-in">
-      {/* Hero Section — Fullscreen Background Carousel (Phase 2 & 3) */}
+      {/* Hero Section — Fullscreen Background Carousel */}
       <section className="relative overflow-hidden min-h-[550px] sm:min-h-[620px] flex items-center justify-center bg-ink-900">
         
         {/* Absolute Background Image Carousel */}
@@ -129,37 +136,70 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Grade selection */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-ink-900 mb-2">{dict.home.chooseGrade}</h2>
-          <p className="text-ink-500">{dict.home.chooseGradeHint}</p>
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-        ) : (
-          <div className="grid sm:grid-cols-2 gap-5 max-w-2xl mx-auto">
-            {grades.map((g) => (
-              <Card
-                key={g.id}
-                hoverable
-                onClick={() => navigate({ name: 'grade', id: g.id })}
-                className="p-8 flex flex-col items-center text-center gap-3 group"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-soft group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-extrabold text-ink-900">{tr(g.name, lang)}</h3>
-                <p className="text-sm text-ink-500">{subjects.length} {dict.home.subjectsTitle.toLowerCase()}</p>
-                <span className="inline-flex items-center gap-1 text-primary-600 text-sm font-semibold mt-1">
-                  {dict.common.start}
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              </Card>
-            ))}
+      {/* Grade Selection — Phase 1 & 2 Polish */}
+      <section className="bg-slate-50/80 border-y border-slate-200/60 py-16 transition-all duration-300">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold text-ink-900 mb-2">{dict.home.chooseGrade}</h2>
+            <p className="text-ink-500">{dict.home.chooseGradeHint}</p>
           </div>
-        )}
+
+          {loading ? (
+            <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              {grades.map((g) => {
+                const name = tr(g.name, lang);
+                const imgPath = getGradeImage(name);
+
+                return (
+                  <Card
+                    key={g.id}
+                    hoverable
+                    onClick={() => navigate({ name: 'grade', id: g.id })}
+                    className="p-8 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:border-primary-300 border border-slate-200/80 bg-white rounded-3xl cursor-pointer"
+                  >
+                    {/* 3D Image Display or Fallback Icon */}
+                    <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ease-out">
+                      {imgPath ? (
+                        <img
+                          src={imgPath}
+                          alt={name}
+                          className="w-full h-full object-contain drop-shadow-md"
+                          onError={(e) => {
+                            // If .webp fails, fallback to .png or default icon
+                            const target = e.currentTarget;
+                            if (target.src.endsWith('.webp')) {
+                              target.src = target.src.replace('.webp', '.png');
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-soft">
+                          <GraduationCap className="w-8 h-8 text-white" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="text-2xl font-black text-ink-900 group-hover:text-primary-600 transition-colors">
+                        {name}
+                      </h3>
+                      <p className="text-sm font-medium text-ink-500">
+                        {subjects.length} Subjects • Interactive Practice
+                      </p>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-4 py-2 rounded-full text-sm font-bold mt-2 group-hover:bg-primary-600 group-hover:text-white transition-all duration-200">
+                      {dict.common.start}
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Subjects */}

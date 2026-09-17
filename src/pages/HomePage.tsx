@@ -19,10 +19,17 @@ interface HomePageProps {
 export function HomePage({ navigate }: HomePageProps) {
   const { lang } = useStore();
   const dict = t(lang);
+  
+  // States for data
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // States for Hero Carousel
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const heroImages = ['/images/hero-1.webp', '/images/hero-2.webp'];
+
+  // Fetch Data Effect
   useEffect(() => {
     let active = true;
     (async () => {
@@ -38,6 +45,14 @@ export function HomePage({ navigate }: HomePageProps) {
     return () => { active = false; };
   }, []);
 
+  // Carousel Auto-Slide Effect (በየ 4 ሰከንዱ እንዲቀየር)
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrentSlide((prev) => (prev === 1 ? 0 : 1));
+    }, 4000);
+    return () => clearInterval(slideInterval);
+  }, []);
+
   return (
     <div className="animate-fade-in">
       {/* Hero */}
@@ -49,6 +64,7 @@ export function HomePage({ navigate }: HomePageProps) {
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-20 sm:pb-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Hero Text */}
             <div className="text-center lg:text-left">
               <span className="inline-flex items-center gap-1.5 bg-primary-100 text-primary-700 px-3 py-1.5 rounded-full text-sm font-semibold mb-5">
                 <Sparkles className="w-4 h-4" />
@@ -83,17 +99,42 @@ export function HomePage({ navigate }: HomePageProps) {
               </div>
             </div>
 
+            {/* Hero Carousel Image */}
             <div className="relative hidden lg:block">
-              <div className="relative rounded-3xl overflow-hidden shadow-lift">
-                <img
-                  src="https://images.pexels.com/photos/11580455/pexels-photo-11580455.jpeg?auto=compress&cs=tinysrgb&h=650&w=940"
-                  alt={dict.home.heroTitle}
-                  className="w-full h-[460px] object-cover"
-                  loading="eager"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink-900/30 to-transparent" />
+              <div className="relative rounded-3xl overflow-hidden shadow-lift w-full h-[460px] bg-ink-100">
+                {/* Images */}
+                {heroImages.map((src, index) => (
+                  <img
+                    key={src}
+                    src={src}
+                    alt={`${dict.home.heroTitle} - Slide ${index + 1}`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+                      index === currentSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    loading={index === 0 ? "eager" : "lazy"}
+                  />
+                ))}
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-ink-900/50 via-ink-900/10 to-transparent" />
+                
+                {/* Carousel Indicators (Dots) */}
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+                  {heroImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        index === currentSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/80'
+                      }`}
+                      aria-label={`Go to slide ${index + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-lift p-4 w-52 animate-slide-up">
+
+              {/* Floating Stat Card */}
+              <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-lift p-4 w-52 animate-slide-up z-20">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-success-100 flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4 text-success-600" />

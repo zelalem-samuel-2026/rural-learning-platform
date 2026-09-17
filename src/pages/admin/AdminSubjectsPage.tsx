@@ -18,9 +18,11 @@ import {
 } from '@/lib/helpers';
 import { supabase } from '@/lib/supabase';
 
+// 1. userRole እዚህ ተጨምሯል
 interface AdminSubjectsPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null;
 }
 
 const ICON_OPTIONS = ['BookOpen', 'Calculator', 'Laptop'];
@@ -32,7 +34,8 @@ const COLOR_OPTIONS = [
   { value: 'from-warning-400 to-warning-600', label: 'Orange' },
 ];
 
-export function AdminSubjectsPage({ route, navigate }: AdminSubjectsPageProps) {
+// 2. ኮምፖነንቱ userRoleን እንዲቀበል ተደርጓል
+export function AdminSubjectsPage({ route, navigate, userRole }: AdminSubjectsPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -149,7 +152,14 @@ export function AdminSubjectsPage({ route, navigate }: AdminSubjectsPageProps) {
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => openEdit(s)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>
-                  <button onClick={() => setDeleteTarget(s)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600" aria-label={dict.admin.delete}><Trash2 className="w-4 h-4" /></button>
+                  
+                  {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
+                  {userRole === 'admin' && (
+                    <button onClick={() => setDeleteTarget(s)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600" aria-label={dict.admin.delete}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  
                 </div>
               </div>
               <h3 className="font-bold text-ink-900">{tr(s.name, lang)}</h3>

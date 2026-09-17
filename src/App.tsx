@@ -1,3 +1,8 @@
+import React, { useEffect, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import { Login } from './Login'; 
+
 import { AppStoreProvider, useStore } from '@/lib/store';
 import { useRouter } from '@/lib/router';
 import { Navbar } from '@/components/Navbar';
@@ -22,26 +27,94 @@ function AppContent() {
   const { route, navigate } = useRouter();
   const { lang } = useStore();
 
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    // መጀመሪያ ሲከፈት ሴሽን እንዳለ ማረጋገጥ
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) console.error("Session error:", error);
+      setSession(session);
+      if (session) fetchUserRole(session.user.id);
+      else setAuthLoading(false);
+    });
+
+    // ሎጊን/ሎግአውት ሲደረግ ማዳመጥ (Listen)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchUserRole(session.user.id);
+      else {
+        setUserRole(null);
+        setAuthLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .single();
+
+      if (!error) setUserRole(data?.role || null);
+    } catch (err) {
+      console.error('Role fetch error:', err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // Sync <html lang> with app language
   if (typeof document !== 'undefined') {
     document.documentElement.lang = lang;
   }
 
-  // Admin pages have their own layout — no student navbar/footer/bottomnav
+  // 1. መረጃው እስኪጣራ ድረስ በመጫን ላይ ማሳየት
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="font-bold text-gray-600">በመጫን ላይ... (Loading...)</p>
+      </div>
+    );
+  }
+
+  // 2. የ Login ገጽ ፍተሻ
+  const isLoginRoute = window.location.hash.includes('/login') || window.location.pathname.includes('/login');
+
+  if (isLoginRoute) {
+    if (session) {
+      navigate({ name: 'admin' }); 
+      return null;
+    }
+    return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
+  }
+
+  // 3. 🛡️ አድሚን ገጾችን Login ላላደረገ ሰው መቆለፍ እና userRoleን ማስተላለፍ
   if (isAdminRoute(route)) {
+    if (!session) {
+       return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
+    }
+
     switch (route.name) {
       case 'admin':
-        return <AdminDashboardPage route={route} navigate={navigate} />;
+        return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
       case 'admin-lessons':
+        // ማሳሰቢያ፦ እዚህ ገጽ ላይ userRoleን አላስተካከልንም፣ ስለዚህ አናስተላልፈውም (Error እንዳያመጣ)
         return <AdminLessonsPage route={route} navigate={navigate} />;
       case 'admin-lesson-edit':
+        // እዚህም በተመሳሳይ
         return <AdminLessonEditorPage route={route} navigate={navigate} lessonId={route.id} />;
       case 'admin-chapters':
-        return <AdminChaptersPage route={route} navigate={navigate} />;
+        return <AdminChaptersPage route={route} navigate={navigate} userRole={userRole} />;
       case 'admin-subjects':
-        return <AdminSubjectsPage route={route} navigate={navigate} />;
+        return <AdminSubjectsPage route={route} navigate={navigate} userRole={userRole} />;
       default:
-        return <AdminDashboardPage route={route} navigate={navigate} />;
+        return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
     }
   }
 

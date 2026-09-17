@@ -16,16 +16,19 @@ import {
   fetchGrades, fetchSubjects, fetchLessonsAdmin, tr,
 } from '@/lib/helpers';
 
+// 1. userRole እዚህ ተጨምሯል
 interface AdminChaptersPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null; 
 }
 
 interface ChapterWithLessons extends Chapter {
   lessonCount: number;
 }
 
-export function AdminChaptersPage({ route, navigate }: AdminChaptersPageProps) {
+// 2. ኮምፖነንቱ userRoleን እንዲቀበል ተደርጓል
+export function AdminChaptersPage({ route, navigate, userRole }: AdminChaptersPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const [chapters, setChapters] = useState<ChapterWithLessons[]>([]);
@@ -171,7 +174,14 @@ export function AdminChaptersPage({ route, navigate }: AdminChaptersPageProps) {
                   <button onClick={() => moveChapter(ch, -1)} disabled={idx === 0} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveUp}><ChevronUp className="w-4 h-4" /></button>
                   <button onClick={() => moveChapter(ch, 1)} disabled={idx === arr.length - 1} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveDown}><ChevronDown className="w-4 h-4" /></button>
                   <button onClick={() => openEdit(ch)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>
-                  <button onClick={() => setDeleteTarget(ch)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600" aria-label={dict.admin.delete}><Trash2 className="w-4 h-4" /></button>
+                  
+                  {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
+                  {userRole === 'admin' && (
+                    <button onClick={() => setDeleteTarget(ch)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600" aria-label={dict.admin.delete}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  
                 </div>
               </div>
             </Card>

@@ -12,12 +12,15 @@ import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
 import { fetchAdminStats, fetchAllLessonsAdmin, tr } from '@/lib/helpers';
 
+// 1. userRole እዚህ ተጨምሯል
 interface AdminDashboardPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null;
 }
 
-export function AdminDashboardPage({ route, navigate }: AdminDashboardPageProps) {
+// 2. ኮምፖነንቱ userRoleን እንዲቀበል ተደርጓል
+export function AdminDashboardPage({ route, navigate, userRole }: AdminDashboardPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const [stats, setStats] = useState<Awaited<ReturnType<typeof fetchAdminStats>> | null>(null);
@@ -57,6 +60,19 @@ export function AdminDashboardPage({ route, navigate }: AdminDashboardPageProps)
 
   return (
     <AdminLayout route={route} navigate={navigate}>
+      
+      {/* 3. የመምህርነት/አድሚንነት ባጅ (Role Badge) የተጨመረበት ቦታ */}
+      <div className="flex items-center gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-ink-900">የአስተዳዳሪ ሰሌዳ (Dashboard)</h1>
+        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+          userRole === 'admin' 
+            ? 'bg-purple-100 text-purple-800 border-purple-300' 
+            : 'bg-blue-100 text-blue-800 border-blue-300'
+        }`}>
+          {userRole === 'admin' ? '👑 Admin' : '👨‍🏫 Teacher'}
+        </span>
+      </div>
+
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         {statCards.map((s) => {

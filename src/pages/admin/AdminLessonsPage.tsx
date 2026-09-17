@@ -18,12 +18,15 @@ import {
   fetchGrades, fetchSubjects, fetchChapters, tr, difficultyColor,
 } from '@/lib/helpers';
 
+// 1. የ userRole ፕሮፕስ ተጨምሯል
 interface AdminLessonsPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null; 
 }
 
-export function AdminLessonsPage({ route, navigate }: AdminLessonsPageProps) {
+// 2. ኮምፖነንቱ userRoleን ይቀበላል
+export function AdminLessonsPage({ route, navigate, userRole }: AdminLessonsPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const [lessons, setLessons] = useState<LessonDB[]>([]);
@@ -180,9 +183,14 @@ export function AdminLessonsPage({ route, navigate }: AdminLessonsPageProps) {
                   <button onClick={() => handleDuplicate(lesson)} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors" aria-label={dict.admin.duplicate}>
                     <Copy className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setDeleteTarget(lesson)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600 transition-colors" aria-label={dict.admin.delete}>
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  
+                  {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
+                  {userRole === 'admin' && (
+                    <button onClick={() => setDeleteTarget(lesson)} className="p-2 rounded-lg hover:bg-error-50 text-ink-500 hover:text-error-600 transition-colors" aria-label={dict.admin.delete}>
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+
                 </div>
               </div>
             </Card>

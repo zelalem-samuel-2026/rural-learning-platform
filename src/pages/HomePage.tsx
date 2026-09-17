@@ -60,6 +60,21 @@ export function HomePage({ navigate }: HomePageProps) {
     return null;
   };
 
+  // Subject Specific 3D Images mapping
+  const getSubjectImage = (subjectId: string, subjectName: string) => {
+    const id = subjectId.toLowerCase();
+    const name = subjectName.toLowerCase();
+
+    if (id.includes('english') || name.includes('english') || name.includes('እንግሊዝኛ')) return '/images/subject-english.webp';
+    if (id.includes('computer') || id.includes('cs') || name.includes('computer') || name.includes('ኮምፒውተር')) return '/images/subject-cs.webp';
+    if (id.includes('math') || name.includes('math') || name.includes('ሒሳብ')) return '/images/subject-math.webp';
+    if (id.includes('general') || id.includes('science') || name.includes('general science') || name.includes('አጠቃላይ') || name.includes('ሳይንስ')) return '/images/subject-science.webp';
+    if (id.includes('social') || name.includes('social') || name.includes('ማህበራዊ')) return '/images/subject-social.webp';
+    if (id.includes('citizen') || name.includes('citizen') || name.includes('ዜግነት')) return '/images/subject-citizenship.webp';
+
+    return null;
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Hero Section — Fullscreen Background Carousel */}
@@ -201,26 +216,58 @@ export function HomePage({ navigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Subjects — Pure White Background */}
-      <section className="bg-white py-16 sm:py-20">
+      {/* Subjects — Subtle Background & 3D Interactive Cards */}
+      <section className="bg-ink-50/70 border-b border-ink-200/60 py-16 sm:py-20 transition-all duration-300">
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-extrabold text-ink-900 mb-3">{dict.home.subjectsTitle}</h2>
             <p className="text-ink-600 max-w-lg mx-auto">{dict.home.subjectsSubtitle}</p>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
-            {subjects.length > 0 ? subjects.map((s) => (
-              <Card key={s.id} className="p-6 flex flex-col items-center text-center gap-4 hover:shadow-lg transition-shadow bg-white border border-ink-100">
-                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
-                  <SubjectIcon name={s.icon} className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-ink-900 text-lg mb-1">{tr(s.name, lang)}</h3>
-                  <p className="text-sm text-ink-500 leading-relaxed">{tr(s.description, lang)}</p>
-                </div>
-              </Card>
-            )) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {subjects.length > 0 ? subjects.map((s) => {
+              const name = tr(s.name, lang);
+              const subImgPath = getSubjectImage(s.id, name);
+
+              return (
+                <Card 
+                  key={s.id} 
+                  hoverable
+                  onClick={() => navigate({ name: 'home' })}
+                  className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
+                >
+                  {/* 3D Subject Image or Fallback Icon */}
+                  <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
+                    {subImgPath ? (
+                      <img
+                        src={subImgPath}
+                        alt={name}
+                        className="w-full h-full object-contain drop-shadow-xl"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (target.src.endsWith('.webp')) {
+                            target.src = target.src.replace('.webp', '.png');
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${s.color} flex items-center justify-center shadow-md`}>
+                        <SubjectIcon name={s.icon} className="w-7 h-7 text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-extrabold text-ink-900 text-xl mb-1.5 group-hover:text-primary-600 transition-colors">
+                      {name}
+                    </h3>
+                    <p className="text-sm text-ink-500 leading-relaxed">
+                      {tr(s.description, lang)}
+                    </p>
+                  </div>
+                </Card>
+              );
+            }) : (
               <div className="col-span-3 flex justify-center py-8"><Spinner /></div>
             )}
           </div>

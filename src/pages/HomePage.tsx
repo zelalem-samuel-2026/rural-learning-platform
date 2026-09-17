@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ArrowRight, Sparkles, WifiOff, Accessibility, Brain, Languages,
-  CheckCircle2, GraduationCap, BookOpen, Laptop, Calculator, Clock,
+  GraduationCap,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
@@ -55,17 +55,12 @@ export function HomePage({ navigate }: HomePageProps) {
 
   return (
     <div className="animate-fade-in">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-primary-50 via-white to-white">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 right-10 w-72 h-72 bg-primary-100/40 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent-100/30 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12 pb-16 sm:pt-20 sm:pb-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      {/* Hero Section — Cleaned Container */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-primary-50 via-white to-white min-h-[500px] flex items-center justify-center">
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
             {/* Hero Text */}
-            <div className="text-center lg:text-left">
+            <div className="text-center lg:text-left z-10">
               <span className="inline-flex items-center gap-1.5 bg-primary-100 text-primary-700 px-3 py-1.5 rounded-full text-sm font-semibold mb-5">
                 <Sparkles className="w-4 h-4" />
                 {dict.home.badge}
@@ -99,9 +94,9 @@ export function HomePage({ navigate }: HomePageProps) {
               </div>
             </div>
 
-            {/* Hero Carousel Image (Mobile & Desktop Responsive) */}
-            <div className="relative mt-8 lg:mt-0">
-              <div className="relative rounded-3xl overflow-hidden shadow-lift w-full h-[260px] sm:h-[360px] lg:h-[460px] bg-ink-100">
+            {/* Hero Carousel Image (Overall Progress Card Removed) */}
+            <div className="relative mt-6 lg:mt-0">
+              <div className="relative rounded-3xl overflow-hidden shadow-lift w-full h-[280px] sm:h-[380px] lg:h-[460px] bg-ink-100">
                 {/* Images */}
                 {heroImages.map((src, index) => (
                   <img
@@ -115,11 +110,11 @@ export function HomePage({ navigate }: HomePageProps) {
                   />
                 ))}
 
-                {/* Gradient Overlay */}
+                {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-ink-900/50 via-ink-900/10 to-transparent" />
 
-                {/* Carousel Indicators (Dots) */}
-                <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 flex justify-center gap-2 z-10">
+                {/* Carousel Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
                   {heroImages.map((_, index) => (
                     <button
                       key={index}
@@ -131,20 +126,6 @@ export function HomePage({ navigate }: HomePageProps) {
                     />
                   ))}
                 </div>
-              </div>
-
-              {/* Floating Stat Card */}
-              <div className="absolute -bottom-3 left-3 sm:-bottom-5 sm:-left-5 bg-white/95 backdrop-blur rounded-2xl shadow-lift p-3 sm:p-4 w-44 sm:w-52 animate-slide-up z-20">
-                <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-success-100 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-success-600" />
-                  </div>
-                  <span className="text-xs sm:text-sm font-bold text-ink-800">{dict.dashboard.overallProgress}</span>
-                </div>
-                <div className="h-2 w-full bg-ink-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-success-500 rounded-full" style={{ width: '72%' }} />
-                </div>
-                <p className="text-[10px] sm:text-xs text-ink-500 mt-1.5">72% — {tr({ en: 'Mathematics', am: 'ሒሳብ' }, lang)}</p>
               </div>
             </div>
           </div>

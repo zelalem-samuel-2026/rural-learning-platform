@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Clock, CheckCircle2, Circle, BookOpen, PlayCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
-import { tr, fetchLessons, fetchSubjectsForGrade, fetchProgress, difficultyColor, formatDuration, getDeviceId } from '@/lib/helpers';
-import type { Route, LessonDB, Subject } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
+import { tr, fetchSubjectsForGrade } from '@/lib/helpers';
+import type { Route, Subject } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { SubjectIcon } from '@/components/SubjectIcon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { supabase } from '@/lib/supabase';
+
+interface ChapterDB {
+  id: string;
+  subject_id: string;
+  grade_id: string;
+  title_en: string;
+  title_am: string;
+  description_en: string;
+  description_am: string;
+  order: number;
+}
 
 interface SubjectPageProps {
   gradeId: string;
@@ -20,28 +30,24 @@ interface SubjectPageProps {
 export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
-  const [lessons, setLessons] = useState<LessonDB[]>([]);
+  const [chapters, setChapters] = useState<ChapterDB[]>([]);
   const [subject, setSubject] = useState<Subject | null>(null);
-  const [progress, setProgress] = useState<Record<string, { status: string; percent: number; last_visited: string }>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const deviceId = getDeviceId();
-        const [subs, lessonList, prog] = await Promise.all([
+        const [subs, { data: chapterList }] = await Promise.all([
           fetchSubjectsForGrade(gradeId),
-          fetchLessons(gradeId, subjectId),
-          fetchProgress(deviceId),
+          supabase.from('chapters').select('*').eq('grade_id', gradeId).eq('subject_id', subjectId).order('order', { ascending: true })
         ]);
         if (active) {
           setSubject(subs.find((s) => s.id === subjectId) ?? null);
-          setLessons(lessonList);
-          setProgress(prog);
+          setChapters(chapterList || []);
         }
-      } catch {
-        // silent
+      } catch (err) {
+        console.error(err);
       } finally {
         if (active) setLoading(false);
       }
@@ -74,68 +80,39 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
 
       {loading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : lessons.length > 0 ? (
+      ) : chapters.length > 0 ? (
         <div className="space-y-3">
           <p className="text-sm text-ink-500 mb-2 font-medium">
-            {lessons.length} {dict.subject.lessons}
+            {chapters.length} ዩኒቶች (Chapters)
           </p>
-          {lessons.map((lesson, idx) => {
-            const prog = progress[lesson.id];
-            const status = (prog?.status ?? 'not-started') as 'not-started' | 'in-progress' | 'completed';
-            const isLast = idx === lessons.length - 1;
+          {chapters.map((chapter) => {
             return (
-              <button
-                key={lesson.id}
-                onClick={() => navigate({ name: 'lesson', id: lesson.id })}
-                className="card-surface hoverable w-full text-left p-5 group flex items-center gap-4 relative"
+              <div
+                key={chapter.id}
+                className="card-surface w-full text-left p-5 group flex items-center gap-4 relative rounded-2xl border border-ink-100 bg-white shadow-soft"
               >
-                {/* Lesson number */}
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg ${
-                  status === 'completed' ? 'bg-success-100 text-success-600'
-                    : status === 'in-progress' ? 'bg-accent-100 text-accent-600'
-                    : 'bg-ink-50 text-ink-400'
-                }`}>
-                  {status === 'completed' ? <CheckCircle2 className="w-5 h-5" /> : lesson.order}
+                {/* Chapter order number */}
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg bg-primary-50 text-primary-600">
+                  {chapter.order}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-ink-900 group-hover:text-primary-700 transition-colors leading-snug">
-                    {tr({ en: lesson.title_en, am: lesson.title_am }, lang)}
+                  <h3 className="font-bold text-ink-900 group-hover:text-primary-700 transition-colors leading-snug text-lg">
+                    {tr({ en: chapter.title_en, am: chapter.title_am }, lang)}
                   </h3>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className="flex items-center gap-1 text-xs text-ink-500">
-                      <Clock className="w-3.5 h-3.5" />
-                      {formatDuration(lesson.duration_min, lang)}
-                    </span>
-                    <span className={`inline-flex items-center rounded-full text-xs font-medium px-2 py-0.5 ${difficultyColor(lesson.difficulty)}`}>
-                      {tr({ en: lesson.difficulty === 'beginner' ? 'Beginner' : lesson.difficulty === 'intermediate' ? 'Intermediate' : 'Advanced', am: lesson.difficulty === 'beginner' ? 'ጀማሪ' : lesson.difficulty === 'intermediate' ? 'መካከለኛ' : 'የላቀ' }, lang)}
-                    </span>
-                    {status === 'in-progress' && (
-                      <Badge color="accent">{dict.subject.inProgress}</Badge>
-                    )}
-                  </div>
+                  <p className="text-sm text-ink-500 mt-1 line-clamp-2">
+                    {tr({ en: chapter.description_en, am: chapter.description_am }, lang)}
+                  </p>
                 </div>
-
-                {/* Progress bar for in-progress */}
-                {status === 'in-progress' && prog && (
-                  <div className="hidden sm:block w-24">
-                    <div className="h-1.5 w-full bg-ink-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-accent-500 rounded-full transition-all" style={{ width: `${prog.percent}%` }} />
-                    </div>
-                    <p className="text-xs text-ink-400 mt-1 text-right">{prog.percent}%</p>
-                  </div>
-                )}
-
-                <PlayCircle className="w-5 h-5 text-ink-300 group-hover:text-primary-500 transition-colors shrink-0" />
-              </button>
+              </div>
             );
           })}
         </div>
       ) : (
         <EmptyState
           icon={<BookOpen className="w-7 h-7" />}
-          title={dict.subject.noLessons}
-          hint={dict.subject.noLessonsHint}
+          title="ምንም ዩኒቶች (Chapters) አልተገኙም"
+          hint="እስካሁን በዚህ የትምህርት አይነት ስር የተጨመረ ዩኒት የለም። ከአድሚን ገጽ ዩኒቶችን ማከል ይችላሉ።"
           action={<Button variant="outline" onClick={() => navigate({ name: 'grade', id: gradeId as any })}>{dict.common.back}</Button>}
         />
       )}

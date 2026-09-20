@@ -85,7 +85,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
           <p className="text-sm text-ink-500 mb-2 font-medium">
             {chapters.length} ዩኒቶች (Chapters)
           </p>
-          {chapters.map((chapter) => {
+          {chapters.map((chapter, idx) => {
             return (
               <div
                 key={chapter.id}
@@ -93,7 +93,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
               >
                 {/* Chapter order number */}
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg bg-primary-50 text-primary-600">
-                  {chapter.order}
+                  {idx + 1}
                 </div>
 
                 <div className="flex-1 min-w-0">

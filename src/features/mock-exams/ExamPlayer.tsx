@@ -18,6 +18,9 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
   const [showPalette, setShowPalette] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // 🚀 አዲስ: የሰዓት ቆጣሪ State (በሴኮንድ)
+  const [timeSpent, setTimeSpent] = useState<number>(0);
+
   useEffect(() => {
     initExam();
   }, [exam.id]);
@@ -25,11 +28,9 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
   const initExam = async () => {
     setLoading(true);
     try {
-      // 1. Fetch exam questions
       const qData = await mockExamService.getExamQuestions(exam.id);
       setQuestions(qData || []);
 
-      // 2. Start attempt record (using a simple device identifier/timestamp for guest/student)
       const deviceId = localStorage.getItem('lerna_device_id') || `dev_${Date.now()}`;
       localStorage.setItem('lerna_device_id', deviceId);
 
@@ -42,28 +43,63 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
     }
   };
 
+  // 🚀 አዲስ: Timer Interval Logic
+  useEffect(() => {
+    if (loading || questions.length === 0 || isSubmitting) return;
+
+    const interval = setInterval(() => {
+      setTimeSpent((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [loading, questions.length, isSubmitting]);
+
+  // 🚀 አዲስ: Warning & Auto-Submit Logic
+  useEffect(() => {
+    if (loading || isSubmitting) return;
+    
+    const recSeconds = exam.recommended_minutes * 60;
+    const maxSeconds = exam.max_minutes * 60;
+
+    // መደበኛ ሰዓት ሲያልቅ Warning ማሳየት
+    if (timeSpent === recSeconds) {
+      alert('ማሳሰቢያ፦ ለዚህ ፈተና የተመደበው መደበኛ ሰዓት አልቋል! (Recommended time reached)');
+    }
+
+    // ከፍተኛ ሰዓት ሲያልቅ በራሱ ጊዜ ማስረከብ (Auto-Submit)
+    if (timeSpent === maxSeconds) {
+      alert('ማሳሰቢያ፦ ፈተናው የተፈቀደለትን ከፍተኛ ሰዓት ስለጨረሰ በራሱ ጊዜ ተረክቧል!');
+      handleFinalSubmit(true); // በግድ እንዲረከብ መላክ
+    }
+  }, [timeSpent]);
+
+  // ሰዓቱን ወደ ደቂቃ እና ሴኮንድ መቀየሪያ ፎርማት
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   const handleSelectOption = (option: 'A' | 'B' | 'C' | 'D') => {
     if (!questions[currentIndex]) return;
     const qId = questions[currentIndex].id;
-    setUserAnswers((prev) => ({
-      ...prev,
-      [qId]: option,
-    }));
+    setUserAnswers((prev) => ({ ...prev, [qId]: option }));
   };
 
   const currentQuestion = questions[currentIndex];
   const totalQuestions = questions.length;
   const answeredCount = Object.keys(userAnswers).length;
 
-  const handleFinalSubmit = async () => {
+  const handleFinalSubmit = async (forceSubmit = false) => {
     if (!attempt || isSubmitting) return;
 
-    const confirmSubmit = window.confirm('ፈተናውን አጠናቀህ ማስረከብ ትፈልጋለህ?');
-    if (!confirmSubmit) return;
+    if (!forceSubmit) {
+      const confirmSubmit = window.confirm('ፈተናውን አጠናቀህ ማስረከብ ትፈልጋለህ?');
+      if (!confirmSubmit) return;
+    }
 
     setIsSubmitting(true);
     try {
-      // Calculate score
       let score = 0;
       const answersToSave = questions.map((q) => {
         const selected = userAnswers[q.id] || null;
@@ -119,6 +155,8 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
     );
   }
 
+  const isOverRecommendedTime = timeSpent >= exam.recommended_minutes * 60;
+
   return (
     <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 z-50 flex flex-col justify-between overflow-hidden">
       {/* Top Header */}
@@ -126,9 +164,7 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              if (window.confirm('ከፈተናው መውጣት ትፈልጋለህ? የሰራኸው አይቀመጥም።')) {
-                onClose();
-              }
+              if (window.confirm('ከፈተናው መውጣት ትፈልጋለህ? የሰራኸው አይቀመጥም።')) onClose();
             }}
             className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
@@ -144,7 +180,17 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* 🚀 አዲስ: የሰዓት ማሳያ (Timer Display) */}
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md font-mono font-bold text-sm border ${
+            isOverRecommendedTime 
+              ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800' 
+              : 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600'
+          }`}>
+            <Clock className="w-4 h-4" />
+            {formatTime(timeSpent)}
+          </div>
+
           <button
             onClick={() => setShowPalette(!showPalette)}
             className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium text-xs sm:text-sm flex items-center gap-1.5"
@@ -152,19 +198,19 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
             <List className="w-4 h-4" />
             <span className="hidden sm:inline">ጥያቄዎች</span> ({answeredCount}/{totalQuestions})
           </button>
+          
           <button
-            onClick={handleFinalSubmit}
+            onClick={() => handleFinalSubmit(false)}
             disabled={isSubmitting}
             className="px-3.5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs sm:text-sm font-bold transition-colors"
           >
-            {isSubmitting ? 'እየተረከበ ነው...' : 'Submit'}
+            {isSubmitting ? 'እየተረከበ...' : 'Submit'}
           </button>
         </div>
       </header>
 
-      {/* Main Content / Single Question Player */}
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-3xl mx-auto w-full">
-        {/* Question Header Card */}
         <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm mb-4">
           <div className="flex items-center justify-between mb-3">
             <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 rounded-full text-xs font-bold">
@@ -181,7 +227,6 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
           </h3>
         </div>
 
-        {/* Options List */}
         <div className="space-y-3">
           {(['A', 'B', 'C', 'D'] as const).map((optKey) => {
             const optText = currentQuestion[`option_${optKey.toLowerCase()}` as keyof PracticeExamQuestion];
@@ -213,7 +258,7 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
         </div>
       </main>
 
-      {/* Navigation Footer Controls */}
+      {/* Footer Navigation */}
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between shrink-0">
         <button
           onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
@@ -221,7 +266,7 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
           className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-medium text-sm flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <ChevronLeft className="w-5 h-5" />
-          <span className="hidden sm:inline">የፊተኛው (Previous)</span>
+          <span className="hidden sm:inline">የፊተኛው</span>
         </button>
 
         <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
@@ -233,12 +278,12 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
           disabled={currentIndex === totalQuestions - 1}
           className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="hidden sm:inline">ቀጣይ (Next)</span>
+          <span className="hidden sm:inline">ቀጣይ</span>
           <ChevronRight className="w-5 h-5" />
         </button>
       </footer>
 
-      {/* Drawer Palette Modal for Questions Quick-Jump */}
+      {/* Drawer Palette Modal */}
       {showPalette && (
         <div className="fixed inset-0 bg-black/50 z-50 flex justify-end animate-fade-in">
           <div className="w-full max-w-xs bg-white dark:bg-gray-800 h-full p-4 flex flex-col justify-between">
@@ -249,12 +294,10 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="grid grid-cols-5 gap-2 max-h-[70vh] overflow-y-auto p-1">
                 {questions.map((q, idx) => {
                   const isAnswered = !!userAnswers[q.id];
                   const isCurrent = idx === currentIndex;
-
                   return (
                     <button
                       key={q.id}
@@ -274,15 +317,6 @@ export const ExamPlayer: React.FC<ExamPlayerProps> = ({ exam, onClose, onFinish 
                     </button>
                   );
                 })}
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-green-600 rounded"></span> ተመልሷል ({answeredCount})
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded border"></span> ያልተመለሰ ({totalQuestions - answeredCount})
               </div>
             </div>
           </div>

@@ -21,7 +21,8 @@ import { AdminLessonsPage } from '@/pages/admin/AdminLessonsPage';
 import { AdminLessonEditorPage } from '@/pages/admin/AdminLessonEditorPage';
 import { AdminChaptersPage } from '@/pages/admin/AdminChaptersPage';
 import { AdminSubjectsPage } from '@/pages/admin/AdminSubjectsPage';
-import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage'; // 🚀 አዲስ የተጨመረ
+import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage'; // 🚀 ቀደም ብሎ የተጨመረ
+import { AdminMockExamEditorPage } from '@/pages/admin/AdminMockExamEditorPage'; // 🚀 አሁን የተጨመረ
 import { isAdminRoute } from '@/lib/router';
 
 // 🚀 የ Practice Exams ማውጫ ገጽ
@@ -115,8 +116,10 @@ function AppContent() {
         return <AdminChaptersPage route={route} navigate={navigate} userRole={userRole} />;
       case 'admin-subjects':
         return <AdminSubjectsPage route={route} navigate={navigate} userRole={userRole} />;
-      case 'admin-mock-exams': // 🚀 አዲስ የተጨመረ
+      case 'admin-mock-exams':
         return <AdminMockExamsPage route={route} navigate={navigate} />;
+      case 'admin-mock-exam-edit': // 🚀 አሁን የተጨመረ
+        return <AdminMockExamEditorPage route={route as any} navigate={navigate} />;
       default:
         return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
     }

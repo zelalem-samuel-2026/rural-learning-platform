@@ -17,20 +17,15 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (user?.id) {
-      fetchProgressData();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.id]);
+    // ገጹ እንደተከፈተ ያለምንም Login ቅድመ-ሁኔታ ከ localStorage ያመጣል
+    fetchProgressData();
+  }, []);
 
   const fetchProgressData = async () => {
     setLoading(true);
     try {
-      if (user?.id) {
-        const data = await mockExamService.getUserAttempts(user.id);
-        setAttempts(data || []);
-      }
+      const data = await mockExamService.getUserAttempts();
+      setAttempts(data || []);
     } catch (err) {
       console.error('Error loading progress stats:', err);
     } finally {

@@ -15,7 +15,9 @@ interface StudentMockExamPageProps {
 
 export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route, navigate }) => {
   const { user } = useStore();
-  const examId = (route as any).id;
+
+  // 🚀 የ examId አወሳሰድ አስተማማኝ ማድረጊያ (ከ Route ወይም ከ URL Hash)
+  const examId = (route && 'id' in route ? (route as any).id : '') || window.location.hash.split('/').pop() || '';
 
   const [exam, setExam] = useState<PracticeExam | null>(null);
   const [questions, setQuestions] = useState<PracticeExamQuestion[]>([]);
@@ -81,7 +83,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
     }));
   };
 
-  // 🧮 STEP 4.1 - Instant Score Calculation & Submission
+  // Instant Score Calculation & Submission
   const handleSubmitExam = async () => {
     if (Object.keys(selectedAnswers).length < questions.length) {
       const confirmSubmit = window.confirm(
@@ -146,7 +148,6 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
       setIsSubmitted(true);
     } catch (err: any) {
       console.error('Error saving exam attempt:', err);
-      // Even if saving fails, show result to student
       setIsSubmitted(true);
     } finally {
       setIsSubmitting(false);
@@ -178,17 +179,17 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
           <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">ምንም ጥያቄ አልተገኘም</h3>
           <p className="text-sm text-gray-500 mb-6">ለዚህ ፈተና እስካሁን የተዘጋጁ ጥያቄዎች የሉም።</p>
           <button
-            onClick={() => navigate({ name: 'home' })}
+            onClick={() => navigate({ name: 'practice-exams' })}
             className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl"
           >
-            ወደ ዋና ገፅ ተመለስ
+            ወደ ፈተናዎች ማውጫ ተመለስ
           </button>
         </div>
       </div>
     );
   }
 
-  // 🏆 STEP 4.2 - Result UI View
+  // 🏆 Result UI View
   if (isSubmitted && calculatedResult) {
     const score = calculatedResult.score;
     let badgeText = 'በርታ፣ አሁንም ደግመህ ሞክር!';
@@ -298,7 +299,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
           </div>
         </div>
 
-        {/* 🔍 STEP 4.3 - Detailed Mistake & Answer Review Section */}
+        {/* Detailed Mistake & Answer Review Section */}
         {showReviewMode && (
           <div className="space-y-6 animate-fade-in mb-12">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -402,7 +403,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
         <button
           onClick={() => {
             if (window.confirm('ከፈተናው መውጣት ይፈልጋሉ? ያከናወኑት አይቀመጥም።')) {
-              navigate({ name: 'home' });
+              navigate({ name: 'practice-exams' });
             }
           }}
           className="p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -461,36 +462,65 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
             );
           })}
         </div>
+
+        {/* Navigation & Submit Action */}
+        <div className="mt-8 flex items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <button
+            disabled={currentQuestionIdx === 0}
+            onClick={() => setCurrentQuestionIdx((prev) => prev - 1)}
+            className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>ቀደመው</span>
+          </button>
+
+          {currentQuestionIdx === questions.length - 1 ? (
+            <button
+              onClick={handleSubmitExam}
+              disabled={isSubmitting}
+              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isSubmitting ? 'እየተላከ ነው...' : 'ፈተናውን ጨርስ (Submit)'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setCurrentQuestionIdx((prev) => prev + 1)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
+            >
+              <span>ቀጣይ</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Navigation & Submit Controls */}
-      <div className="flex items-center justify-between gap-3">
-        <button
-          onClick={() => setCurrentQuestionIdx((prev) => Math.max(0, prev - 1))}
-          disabled={currentQuestionIdx === 0}
-          className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1.5 disabled:opacity-40"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          ቀደመው
-        </button>
+      {/* Question Palette / Number Grid */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
+        <span className="block text-xs font-bold text-gray-500 mb-3">የጥያቄዎች ሁኔታ፦</span>
+        <div className="flex flex-wrap gap-2">
+          {questions.map((q, idx) => {
+            const isAnswered = !!selectedAnswers[q.id];
+            const isCurrent = idx === currentQuestionIdx;
 
-        {currentQuestionIdx < questions.length - 1 ? (
-          <button
-            onClick={() => setCurrentQuestionIdx((prev) => Math.min(questions.length - 1, prev + 1))}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm"
-          >
-            ቀጣይ
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmitExam}
-            disabled={isSubmitting}
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md disabled:opacity-50"
-          >
-            {isSubmitting ? 'እየተረጋገጠ ነው...' : 'ፈተናውን ጨርስ (Submit)'}
-          </button>
-        )}
+            let btnStyle = 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+            if (isCurrent) {
+              btnStyle = 'ring-2 ring-blue-600 font-bold bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100';
+            } else if (isAnswered) {
+              btnStyle = 'bg-emerald-100 text-emerald-800 font-bold dark:bg-emerald-950 dark:text-emerald-300';
+            }
+
+            return (
+              <button
+                key={q.id}
+                onClick={() => setCurrentQuestionIdx(idx)}
+                className={`w-9 h-9 rounded-xl text-xs flex items-center justify-center transition-all ${btnStyle}`}
+              >
+                {idx + 1}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { mockExamService } from '@/features/mock-exams/mockExamService';
 import { PracticeExam } from '@/features/mock-exams/types';
-import type { Route, GradeId } from '@/lib/types';
+import type { Route, GradeId, Chapter, Subject } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 import { 
-  Plus, Clock, BookOpen, Trash2, Edit3, CheckCircle2, 
-  AlertCircle, ArrowLeft, X, Save, FileQuestion 
+  Plus, Clock, BookOpen, Trash2, Edit3, 
+  ArrowLeft, X, Save, FileQuestion, Layers 
 } from 'lucide-react';
 
 interface AdminMockExamsPageProps {
@@ -14,6 +15,8 @@ interface AdminMockExamsPageProps {
 
 export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [chapters, setChapters] =<span class="math"> Chapter[] >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormModal, setShowFormModal] = useState<boolean>(false);
   const [editingExam, setEditingExam] = useState<PracticeExam | null>(null);
@@ -23,7 +26,8 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
     title_am: '',
     title_en: '',
     grade_id: 'grade-5' as GradeId,
-    subject_id: 'maths',
+    subject_id: '',
+    chapter_id: '',
     recommended_minutes: 60,
     max_minutes: 120,
     status: 'draft' as 'draft' | 'published',
@@ -33,7 +37,17 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
   useEffect(() => {
     fetchExams();
+    fetchSubjects();
   }, []);
+
+  // Grade ወይም Subject ሲቀየር ተዛማጅ ቻፕተሮችን/ዩኒቶችን ማምጣት
+  useEffect(() => {
+    if (formData.grade_id && formData.subject_id) {
+      fetchChapters(formData.grade_id, formData.subject_id);
+    } else {
+      setChapters([]);
+    }
+  }, [formData.grade_id, formData.subject_id]);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -41,9 +55,41 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       const data = await mockExamService.getAllExams();
       setExams(data || []);
     } catch (err) {
-      console.error('Failed to load exams for admin:', err);
+      console.error('Failed to load exams:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const { data } = await supabase.from('subjects').select('*');
+      if (data && data.length > 0) {
+        setSubjects(data);
+        setFormData(prev => ({ ...prev, subject_id: data[0].id }));
+      }
+    } catch (err) {
+      console.error('Error fetching subjects:', err);
+    }
+  };
+
+  const fetchChapters = async (gradeId: string, subjectId: string) => {
+    try {
+      const { data } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('grade_id', gradeId)
+        .eq('subject_id', subjectId)
+        .order('order', { ascending: true });
+
+      setChapters(data || []);
+      if (data && data.length > 0) {
+        setFormData(prev => ({ ...prev, chapter_id: data[0].id }));
+      } else {
+        setFormData(prev => ({ ...prev, chapter_id: '' }));
+      }
+    } catch (err) {
+      console.error('Error fetching chapters:', err);
     }
   };
 
@@ -53,7 +99,8 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       title_am: '',
       title_en: '',
       grade_id: 'grade-5',
-      subject_id: 'maths',
+      subject_id: subjects[0]?.id || '',
+      chapter_id: '',
       recommended_minutes: 60,
       max_minutes: 120,
       status: 'draft',
@@ -68,6 +115,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       title_en: exam.title_en,
       grade_id: exam.grade_id,
       subject_id: exam.subject_id,
+      chapter_id: exam.chapter_id || '',
       recommended_minutes: exam.recommended_minutes,
       max_minutes: exam.max_minutes,
       status: exam.status,
@@ -104,7 +152,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('ይህንን ፈተና በእርግጥ ማጥፋት ይፈልጋሉ? ከነጥያቄዎቹ በሙሉ ይዘረዛል።')) return;
+    if (!window.confirm('ይህንን ፈተና በእርግጥ ማጥፋት ይፈልጋሉ?')) return;
     try {
       await mockExamService.deleteExam(id);
       fetchExams();
@@ -129,7 +177,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
               የሙከራ ፈተናዎች ማስተዳደሪያ (Mock Exams)
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              አዳዲስ ፈተናዎችን ይፍጠሩ፣ ጥያቄዎችን ያስገቡ እና ለተማሪዎች ያሳትሙ
+              በምዕራፍ (Unit) የተከፈሉ የፈተና ጥያቄዎችን ያስተዳድሩ
             </p>
           </div>
         </div>
@@ -153,13 +201,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
           <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">እስካሁን ምንም የተፈጠረ ፈተና የለም</h3>
-          <p className="text-sm text-gray-500 mb-4">ከላይ ያለውን "አዲስ ፈተና ፍጠር" የሚለውን በመጫን ይጀምሩ።</p>
-          <button
-            onClick={handleOpenCreateModal}
-            className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg text-sm"
-          >
-            አዲስ ፈተና ፍጠር
-          </button>
+          <p className="text-sm text-gray-500 mb-4">ከላይ ያለውን "አዲስ ፈተና ፍጠር" በመጫን ይጀምሩ።</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -177,7 +219,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                         : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300'
                     }`}
                   >
-                    {exam.status === 'published' ? 'የተለቀቀ (Published)' : 'ረቂቅ (Draft)'}
+                    {exam.status === 'published' ? 'Published' : 'Draft'}
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md">
                     {exam.grade_id === 'grade-5' ? '5ኛ ክፍል' : '6ኛ ክፍል'}
@@ -192,11 +234,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                 <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-300 mb-5">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-blue-500" />
-                    <span>የሚመከር ሰዓት፦ {exam.recommended_minutes} ደቂቃ</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-orange-500" />
-                    <span>ከፍተኛው ሰዓት፦ {exam.max_minutes} ደቂቃ</span>
+                    <span>ሰዓት፦ {exam.recommended_minutes} ደቂቃ (Max: {exam.max_minutes})</span>
                   </div>
                 </div>
               </div>
@@ -213,14 +251,12 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                 <button
                   onClick={() => handleOpenEditModal(exam)}
                   className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg"
-                  title="አስተካክል"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(exam.id)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
-                  title="ሰርዝ"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -230,13 +266,13 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         </div>
       )}
 
-      {/* Modal Form for Create/Edit Exam Metadata */}
+      {/* Modal Form */}
       {showFormModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700 mb-5">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {editingExam ? 'ፈተና ማስተካከያ' : 'አዲስ ፈተና መፍጠሪያ'}
+                {editingExam ? 'ፈተና ማስተካከያ' : 'አዲስ ፈተና መፍጠሪያ (በዩኒት)'}
               </h3>
               <button
                 onClick={() => setShowFormModal(false)}
@@ -249,12 +285,12 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  የፈተናው ስም (በአማርኛ) *
+                  የፈተናው ርዕስ (በአማርኛ) *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="ምሳሌ፦ የ 5ኛ ክፍል ሒሳብ ሞዴል ፈተና 1"
+                  placeholder="ምሳሌ፦ ዩኒት 1፡ የቁጥር ስርዓቶች ፈተና"
                   value={formData.title_am}
                   onChange={(e) => setFormData({ ...formData, title_am: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
@@ -263,12 +299,12 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  የፈተናው ስም (በእንግሊዝኛ) *
+                  የፈተናው ርዕስ (በእንግሊዝኛ) *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Grade 5 Maths Model Exam 1"
+                  placeholder="e.g. Unit 1: Number Systems Exam"
                   value={formData.title_en}
                   onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
                   className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
@@ -289,18 +325,43 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ትምህርት</label>
+                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ትምህርት (Subject)</label>
                   <select
                     value={formData.subject_id}
                     onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                   >
-                    <option value="maths">ሒሳብ (Mathematics)</option>
-                    <option value="science">ሳይንስ (Science)</option>
-                    <option value="english">እንግሊዝኛ (English)</option>
-                    <option value="social-studies">ማህበራዊ ሳይንስ (Social Studies)</option>
+                    {subjects.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name.am} ({sub.name.en})
+                      </option>
+                    ))}
                   </select>
                 </div>
+              </div>
+
+              {/* 🚀 ዩኒት/ምዕራፍ መምረጫ (Unit Selector) */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
+                  <Layers className="w-4 h-4 text-blue-500" />
+                  ምዕራፍ/ዩኒት (Chapter / Unit) *
+                </label>
+                <select
+                  required
+                  value={formData.chapter_id}
+                  onChange={(e) => setFormData({ ...formData, chapter_id: e.target.value })}
+                  className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
+                >
+                  {chapters.length === 0 ? (
+                    <option value="">ለዚህ ትምህርት የተመዘገበ ዩኒት የለም</option>
+                  ) : (
+                    chapters.map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.title_am} ({ch.title_en})
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -341,7 +402,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                 >
                   <option value="draft">ረቂቅ (Draft) - ተማሪዎች አያዩትም</option>
-                  <option value="published">የተለቀቀ (Published) - ለተማሪዎች ይታያል</option>
+                  <option value="published">የተለቀቀ (Published) - ተማሪዎች ይፈተኑበታል</option>
                 </select>
               </div>
 

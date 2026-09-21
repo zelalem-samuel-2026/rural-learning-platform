@@ -1,10 +1,13 @@
+import { GradeId } from '@/lib/types';
+
 export interface PracticeExam {
   id: string;
-  grade_id: string;
-  subject_id: string;
-  chapter_id?: string;
   title_en: string;
   title_am: string;
+  grade_id: GradeId;
+  subject_id: string;
+  chapter_id?: string; // 👈 ዩኒቱን/ምዕራፉን ለመያዝ
+  total_questions: number; // 👈 አጠቃላይ የጥያቄ ብዛት
   recommended_minutes: number;
   max_minutes: number;
   status: 'draft' | 'published' | 'archived';

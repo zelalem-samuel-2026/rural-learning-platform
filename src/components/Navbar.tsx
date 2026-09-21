@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GraduationCap, Menu, X, Home, ChartNoAxesCombined, Settings } from 'lucide-react';
+import { GraduationCap, Menu, X, Home, ChartNoAxesCombined, Settings, FileText } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
@@ -18,6 +18,11 @@ export function Navbar({ route, navigate }: NavbarProps) {
 
   const links: { label: string; route: Route; icon: typeof Home }[] = [
     { label: dict.nav.home, route: { name: 'home' }, icon: Home },
+    { 
+      label: lang === 'am' ? 'የሙከራ ፈተናዎች' : 'Practice Exams', 
+      route: { name: 'practice-exams' } as Route, 
+      icon: FileText 
+    },
     { label: dict.nav.dashboard, route: { name: 'dashboard' }, icon: ChartNoAxesCombined },
     { label: dict.nav.admin, route: { name: 'admin' }, icon: Settings },
   ];

@@ -16,6 +16,8 @@ function parseHash(hash: string): Route {
       return { name: 'quiz', lessonId: parts[1] };
     case 'dashboard':
       return { name: 'dashboard' };
+    case 'practice-exams':
+      return { name: 'practice-exams' };
     case 'admin':
       if (parts[1] === 'lessons') return { name: 'admin-lessons' };
       if (parts[1] === 'lesson') {
@@ -25,6 +27,13 @@ function parseHash(hash: string): Route {
       }
       if (parts[1] === 'chapters') return { name: 'admin-chapters' };
       if (parts[1] === 'subjects') return { name: 'admin-subjects' };
+      // 🚀 አዲስ የተጨመሩ የአድሚን ራውቶች
+      if (parts[1] === 'mock-exams') return { name: 'admin-mock-exams' };
+      if (parts[1] === 'mock-exam') {
+        return parts[2] === 'new'
+          ? { name: 'admin-mock-exam-edit' }
+          : { name: 'admin-mock-exam-edit', id: parts[2] };
+      }
       return { name: 'admin' };
     default:
       return { name: 'home' };
@@ -45,6 +54,8 @@ export function routeToHash(route: Route): string {
       return `#/quiz/${route.lessonId}`;
     case 'dashboard':
       return '#/dashboard';
+    case 'practice-exams':
+      return '#/practice-exams';
     case 'admin':
       return '#/admin';
     case 'admin-lessons':
@@ -55,6 +66,11 @@ export function routeToHash(route: Route): string {
       return '#/admin/chapters';
     case 'admin-subjects':
       return '#/admin/subjects';
+    // 🚀 አዲስ የተጨመሩ
+    case 'admin-mock-exams':
+      return '#/admin/mock-exams';
+    case 'admin-mock-exam-edit':
+      return route.id ? `#/admin/mock-exam/${route.id}` : '#/admin/mock-exam/new';
   }
 }
 

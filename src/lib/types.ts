@@ -111,9 +111,11 @@ export type Route =
   | { name: 'lesson'; id: string }
   | { name: 'quiz'; lessonId: string }
   | { name: 'dashboard' }
+  | { name: 'practice-exams' }
   | { name: 'admin' }
   | { name: 'admin-lessons' }
   | { name: 'admin-lesson-edit'; id?: string }
   | { name: 'admin-chapters' }
   | { name: 'admin-subjects' }
-  | { name: 'practice-exams' };
+  | { name: 'admin-mock-exams' } // 🚀 አዲስ የተጨመረ
+  | { name: 'admin-mock-exam-edit'; id?: string }; // 🚀 አዲስ የተጨመረ

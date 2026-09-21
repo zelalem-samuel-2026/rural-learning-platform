@@ -21,9 +21,10 @@ import { AdminLessonsPage } from '@/pages/admin/AdminLessonsPage';
 import { AdminLessonEditorPage } from '@/pages/admin/AdminLessonEditorPage';
 import { AdminChaptersPage } from '@/pages/admin/AdminChaptersPage';
 import { AdminSubjectsPage } from '@/pages/admin/AdminSubjectsPage';
+import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage'; // 🚀 አዲስ የተጨመረ
 import { isAdminRoute } from '@/lib/router';
 
-// 🚀 አዲሱ የ Practice Exams ማውጫ ገጽ (ወደፊት የምንሰራው)
+// 🚀 የ Practice Exams ማውጫ ገጽ
 import { MockExamsHomePage } from '@/features/mock-exams/MockExamsHomePage'; 
 
 function AppContent() {
@@ -114,6 +115,8 @@ function AppContent() {
         return <AdminChaptersPage route={route} navigate={navigate} userRole={userRole} />;
       case 'admin-subjects':
         return <AdminSubjectsPage route={route} navigate={navigate} userRole={userRole} />;
+      case 'admin-mock-exams': // 🚀 አዲስ የተጨመረ
+        return <AdminMockExamsPage route={route} navigate={navigate} />;
       default:
         return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
     }
@@ -133,9 +136,10 @@ function AppContent() {
         return <QuizPage lessonId={route.lessonId} navigate={navigate} />;
       case 'dashboard':
         return <DashboardPage navigate={navigate} />;
-      // 🚀 አዲሱ የ Practice Exams ማውጫ ራውቲንግ
       case 'practice-exams':
         return <MockExamsHomePage navigate={navigate} />;
+      default:
+        return <HomePage navigate={navigate} />;
     }
   };
 

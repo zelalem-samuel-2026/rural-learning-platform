@@ -150,10 +150,19 @@ export const mockExamService = {
     return data;
   },
 
-  async getUserAttempts(userId: string): Promise<PracticeExamAttempt[]> {
+  // 🚀 ከ የፈተናው ርዕስ (practice_exams) ጋር አብሮ እንዲያመጣ ተስተካክሏል
+  async getUserAttempts(userId: string): Promise<any[]> {
     const { data, error } = await supabase
       .from('practice_exam_attempts')
-      .select('*')
+      .select(`
+        *,
+        practice_exams (
+          id,
+          title_am,
+          title_en,
+          subject
+        )
+      `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 

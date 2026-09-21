@@ -16,6 +16,7 @@ import { SubjectPage } from '@/pages/SubjectPage';
 import { LessonPage } from '@/pages/LessonPage';
 import { QuizPage } from '@/pages/QuizPage';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { StudentProgressPage } from '@/pages/StudentProgressPage'; // 🚀 የተማሪዎች Progress Dashboard ገጽ
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminLessonsPage } from '@/pages/admin/AdminLessonsPage';
 import { AdminLessonEditorPage } from '@/pages/admin/AdminLessonEditorPage';
@@ -23,7 +24,7 @@ import { AdminChaptersPage } from '@/pages/admin/AdminChaptersPage';
 import { AdminSubjectsPage } from '@/pages/admin/AdminSubjectsPage';
 import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage';
 import { AdminMockExamEditorPage } from '@/pages/admin/AdminMockExamEditorPage';
-import { StudentMockExamPage } from '@/pages/StudentMockExamPage'; // 🚀 አሁን የተጨመረ የተማሪዎች ፈተና መስሪያ ገጽ
+import { StudentMockExamPage } from '@/pages/StudentMockExamPage';
 import { isAdminRoute } from '@/lib/router';
 
 // 🚀 የ Practice Exams ማውጫ ገጽ
@@ -33,9 +34,9 @@ function AppContent() {
   const { route, navigate } = useRouter();
   const { lang } = useStore();
 
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
     // መጀመሪያ ሲከፈት ሴሽን እንዳለ ማረጋገጥ
@@ -75,7 +76,7 @@ function AppContent() {
     }
   };
 
-  // Sync <html lang> with app language
+  // Sync  with app language
   if (typeof document !== 'undefined') {
     document.documentElement.lang = lang;
   }
@@ -83,95 +84,3 @@ function AppContent() {
   // 1. መረጃው እስኪጣራ ድረስ በመጫን ላይ ማሳየት
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <p className="font-bold text-gray-600">በመጫን ላይ... (Loading...)</p>
-      </div>
-    );
-  }
-
-  // 2. የ Login ገጽ ፍተሻ
-  const isLoginRoute = window.location.hash.includes('/login') || window.location.pathname.includes('/login');
-
-  if (isLoginRoute) {
-    if (session) {
-      navigate({ name: 'admin' }); 
-      return null;
-    }
-    return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
-  }
-
-  // 3. 🛡️ አድሚን ገጾችን Login ላላደረገ ሰው መቆለፍ እና userRoleን ማስተላለፍ
-  if (isAdminRoute(route)) {
-    if (!session) {
-       return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
-    }
-
-    switch (route.name) {
-      case 'admin':
-        return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
-      case 'admin-lessons':
-        return <AdminLessonsPage route={route} navigate={navigate} />;
-      case 'admin-lesson-edit':
-        return <AdminLessonEditorPage route={route} navigate={navigate} lessonId={route.id} />;
-      case 'admin-chapters':
-        return <AdminChaptersPage route={route} navigate={navigate} userRole={userRole} />;
-      case 'admin-subjects':
-        return <AdminSubjectsPage route={route} navigate={navigate} userRole={userRole} />;
-      case 'admin-mock-exams':
-        return <AdminMockExamsPage route={route} navigate={navigate} />;
-      case 'admin-mock-exam-edit':
-        return <AdminMockExamEditorPage route={route as any} navigate={navigate} />;
-      default:
-        return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
-    }
-  }
-
-  const renderPage = () => {
-    switch (route.name) {
-      case 'home':
-        return <HomePage navigate={navigate} />;
-      case 'grade':
-        return <GradePage gradeId={route.id} navigate={navigate} />;
-      case 'subject':
-        return <SubjectPage gradeId={route.gradeId} subjectId={route.subjectId} navigate={navigate} />;
-      case 'lesson':
-        return <LessonPage lessonId={route.id} navigate={navigate} />;
-      case 'quiz':
-        return <QuizPage lessonId={route.lessonId} navigate={navigate} />;
-      case 'dashboard':
-        return <DashboardPage navigate={navigate} />;
-      case 'practice-exams':
-        return <MockExamsHomePage navigate={navigate} />;
-      case 'mock-exam': // 🚀 የተማሪዎች ፈተና መስሪያ ራውት
-      case 'practice-exam':
-        return <StudentMockExamPage route={route} navigate={navigate} />;
-      default:
-        return <HomePage navigate={navigate} />;
-    }
-  };
-
-  // ፈተና ወይም ኩዊዝ ሲሰራ Footer እንዳይታይ መደበቅ
-  const showFooter = route.name !== 'quiz' && route.name !== 'mock-exam' && route.name !== 'practice-exam';
-
-  return (
-    <div className="min-h-screen flex flex-col bg-ink-50">
-      <OfflineBanner />
-      <Navbar route={route} navigate={navigate} />
-      <main className="flex-1 pb-20 md:pb-0">
-        <div key={route.name + ('id' in route ? route.id : '')}>
-          {renderPage()}
-        </div>
-      </main>
-      {showFooter && <Footer navigate={navigate} />}
-      <BottomNav route={route} navigate={navigate} />
-    </div>
-  );
-}
-
-export default function App() {
-  return (
-    <AppStoreProvider>
-      <AppContent />
-    </AppStoreProvider>
-  );
-}

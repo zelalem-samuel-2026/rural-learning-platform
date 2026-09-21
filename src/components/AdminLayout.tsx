@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { LayoutDashboard, BookOpen, FolderTree, Library, ArrowLeft } from 'lucide-react';
+import { LayoutDashboard, BookOpen, FolderTree, Library, ArrowLeft, FileQuestion } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
@@ -15,16 +15,22 @@ export function AdminLayout({ route, navigate, children }: AdminLayoutProps) {
   const { lang } = useStore();
   const dict = t(lang);
 
+  const mockExamLabel = (dict as any)?.admin?.mockExams || (lang === 'am' ? 'የሙከራ ፈተናዎች' : 'Mock Exams');
+
   const tabs: { label: string; route: Route; icon: typeof LayoutDashboard }[] = [
     { label: dict.admin.overview, route: { name: 'admin' }, icon: LayoutDashboard },
     { label: dict.admin.lessons, route: { name: 'admin-lessons' }, icon: BookOpen },
     { label: dict.admin.chapters, route: { name: 'admin-chapters' }, icon: FolderTree },
     { label: dict.admin.subjects, route: { name: 'admin-subjects' }, icon: Library },
+    { label: mockExamLabel, route: { name: 'admin-mock-exams' as any }, icon: FileQuestion },
   ];
 
   const isActive = (r: Route) => {
     if (r.name === 'admin') return route.name === 'admin';
     if (r.name === 'admin-lessons') return route.name === 'admin-lessons' || route.name === 'admin-lesson-edit';
+    if (r.name === ('admin-mock-exams' as any)) {
+      return route.name === ('admin-mock-exams' as any) || route.name === ('admin-mock-exam-edit' as any);
+    }
     return r.name === route.name;
   };
 

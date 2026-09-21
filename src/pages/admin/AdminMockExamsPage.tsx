@@ -15,8 +15,8 @@ interface AdminMockExamsPageProps {
 
 export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [chapters, setChapters] =<span class="math"> Chapter[] >([]);
+  const [subjects, setSubjects] = useState<any[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormModal, setShowFormModal] = useState<boolean>(false);
   const [editingExam, setEditingExam] = useState<PracticeExam | null>(null);
@@ -40,7 +40,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
     fetchSubjects();
   }, []);
 
-  // Grade ወይም Subject ሲቀየር ተዛማጅ ቻፕተሮችን/ዩኒቶችን ማምጣት
   useEffect(() => {
     if (formData.grade_id && formData.subject_id) {
       fetchChapters(formData.grade_id, formData.subject_id);
@@ -135,15 +134,22 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       if (editingExam) {
         await mockExamService.updateExam(editingExam.id, formData);
         alert('ፈተናው በስኬት ተሻሽሏል!');
+        setShowFormModal(false);
+        fetchExams();
       } else {
-        await mockExamService.createExam({
-          ...formData,
-          total_questions: 0,
-        });
+        // 🚀 total_questions ሙሉ በሙሉ ጠፍቷል፤ formData ብቻ ይላካል
+        const newExam = await mockExamService.createExam(formData);
+        
         alert('አዲስ ፈተና በስኬት ተፈጥሯል!');
+        setShowFormModal(false);
+        
+        const examId = newExam?.id || (Array.isArray(newExam) && newExam[0]?.id);
+        if (examId) {
+          navigate({ name: 'admin-mock-exam-edit', id: examId });
+        } else {
+          fetchExams();
+        }
       }
-      setShowFormModal(false);
-      fetchExams();
     } catch (err: any) {
       alert(`ስህተት ተፈጥሯል፦ ${err.message || 'አልተሳካም'}`);
     } finally {
@@ -163,14 +169,13 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate({ name: 'admin' })}
             className="p-2 rounded-xl border border-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300"/>
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -186,12 +191,11 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
           onClick={handleOpenCreateModal}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all shrink-0"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-5 h-5"/>
           አዲስ ፈተና ፍጠር
         </button>
       </div>
 
-      {/* Exam List */}
       {loading ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -199,7 +203,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         </div>
       ) : exams.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">
-          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3"/>
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">እስካሁን ምንም የተፈጠረ ፈተና የለም</h3>
           <p className="text-sm text-gray-500 mb-4">ከላይ ያለውን "አዲስ ፈተና ፍጠር" በመጫን ይጀምሩ።</p>
         </div>
@@ -233,32 +237,31 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
                 <div className="space-y-1.5 text-xs text-gray-600 dark:text-gray-300 mb-5">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-500" />
+                    <Clock className="w-4 h-4 text-blue-500"/>
                     <span>ሰዓት፦ {exam.recommended_minutes} ደቂቃ (Max: {exam.max_minutes})</span>
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between gap-2">
                 <button
                   onClick={() => navigate({ name: 'admin-mock-exam-edit', id: exam.id })}
                   className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
-                  <FileQuestion className="w-4 h-4" />
+                  <FileQuestion className="w-4 h-4"/>
                   ጥያቄዎች
                 </button>
                 <button
                   onClick={() => handleOpenEditModal(exam)}
                   className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg"
                 >
-                  <Edit3 className="w-4 h-4" />
+                  <Edit3 className="w-4 h-4"/>
                 </button>
                 <button
                   onClick={() => handleDelete(exam.id)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4"/>
                 </button>
               </div>
             </div>
@@ -266,7 +269,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         </div>
       )}
 
-      {/* Modal Form */}
       {showFormModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
@@ -278,7 +280,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                 onClick={() => setShowFormModal(false)}
                 className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5"/>
               </button>
             </div>
 
@@ -331,19 +333,18 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                     onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                   >
-                    {subjects.map((sub) => (
+                    {subjects.map((sub: any) => (
                       <option key={sub.id} value={sub.id}>
-                        {sub.name.am} ({sub.name.en})
+                        {sub?.title_am || sub?.name_am || sub?.name || 'Subject'} {sub?.title_en || sub?.name_en ? `(${sub.title_en || sub.name_en})` : ''}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* 🚀 ዩኒት/ምዕራፍ መምረጫ (Unit Selector) */}
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
-                  <Layers className="w-4 h-4 text-blue-500" />
+                  <Layers className="w-4 h-4 text-blue-500"/>
                   ምዕራፍ/ዩኒት (Chapter / Unit) *
                 </label>
                 <select
@@ -419,7 +420,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   disabled={saving}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm disabled:opacity-50"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4"/>
                   {saving ? 'እየተቀመጠ ነው...' : 'አስቀምጥ'}
                 </button>
               </div>

@@ -1,109 +1,127 @@
-import { supabase } from '../../lib/supabase';
-import { PracticeExam, PracticeExamQuestion, PracticeExamAttempt, PracticeExamAnswer } from './types';
+import { supabase } from '@/lib/supabase';
+import { PracticeExam, PracticeExamQuestion } from './types';
 
 export const mockExamService = {
-  // 1. Fetch all published exams for a specific subject/grade
-  async getExamsBySubject(gradeId: string, subjectId: string) {
+  async getAllExams(): Promise<PracticeExam[]> {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
-      .eq('grade_id', gradeId)
-      .eq('subject_id', subjectId)
-      .eq('status', 'published')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data as PracticeExam[];
+    if (error) {
+      console.error('Error fetching exams:', error);
+      throw error;
+    }
+    return data || [];
   },
 
-  // 2. Fetch questions for a specific exam
-  async getExamQuestions(examId: string) {
+  async getExamById(id: string): Promise<PracticeExam | null> {
     const { data, error } = await supabase
-      .from('practice_exam_questions')
+      .from('practice_exams')
       .select('*')
-      .eq('exam_id', examId)
-      .order('question_order', { ascending: true });
+      .eq('id', id)
+      .maybeSingle();
 
-    if (error) throw error;
-    return data as PracticeExamQuestion[];
+    if (error) {
+      console.error('Error fetching exam by id:', error);
+      throw error;
+    }
+    return data;
   },
 
-  // 3. Create a new practice exam (Admin/Teacher)
-  async createExam(examData: Omit<PracticeExam, 'id' | 'created_at'>) {
+  async createExam(examData: Omit<PracticeExam, 'id'>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
       .insert([examData])
       .select()
       .single();
 
-    if (error) throw error;
-    return data as PracticeExam;
+    if (error) {
+      console.error('Error creating exam:', error);
+      throw error;
+    }
+    return data;
   },
 
-  // 4. Add questions to an exam (Admin/Teacher)
-  async addQuestions(questions: Omit<PracticeExamQuestion, 'id' | 'created_at'>[]) {
+  async updateExam(id: string, examData: Partial<PracticeExam>): Promise<PracticeExam> {
     const { data, error } = await supabase
-      .from('practice_exam_questions')
-      .insert(questions)
-      .select();
-
-    if (error) throw error;
-    return data as PracticeExamQuestion[];
-  },
-
-  // 5. Start an exam attempt
-  async startAttempt(examId: string, deviceId: string) {
-    const { data, error } = await supabase
-      .from('practice_exam_attempts')
-      .insert([
-        {
-          exam_id: examId,
-          device_id: deviceId,
-          status: 'in-progress',
-          started_at: new Date().toISOString(),
-        },
-      ])
+      .from('practice_exams')
+      .update(examData)
+      .eq('id', id)
       .select()
       .single();
 
-    if (error) throw error;
-    return data as PracticeExamAttempt;
+    if (error) {
+      console.error('Error updating exam:', error);
+      throw error;
+    }
+    return data;
   },
 
-  // 6. Complete an exam attempt & save results
-  async submitAttempt(
-    attemptId: string,
-    score: number,
-    totalQuestions: number,
-    answers: Omit<PracticeExamAnswer, 'id' | 'created_at'>[],
-    autoSubmitted = false
-  ) {
-    const percentage = Number(((score / totalQuestions) * 100).toFixed(2));
+  async deleteExam(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('practice_exams')
+      .delete()
+      .eq('id', id);
 
-    // Update attempt record
-    const { error: attemptError } = await supabase
-      .from('practice_exam_attempts')
-      .update({
-        score,
-        total_questions: totalQuestions,
-        percentage,
-        status: 'completed',
-        auto_submitted: autoSubmitted,
-        submitted_at: new Date().toISOString(),
-      })
-      .eq('id', attemptId);
-
-    if (attemptError) throw attemptError;
-
-    // Save student individual answers
-    if (answers.length > 0) {
-      const { error: answersError } = await supabase
-        .from('practice_exam_answers')
-        .insert(answers);
-
-      if (answersError) throw answersError;
+    if (error) {
+      console.error('Error deleting exam:', error);
+      throw error;
     }
+  },
 
-    return { success: true, score, percentage };
+  // Questions CRUD
+  async getQuestionsByExamId(examId: string): Promise<PracticeExamQuestion[]> {
+    const { data, error } = await supabase
+      .from('practice_exam_questions')
+      .select('*')
+      .eq('exam_id', examId);
+
+    if (error) {
+      console.error('Error fetching questions:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async createQuestion(questionData: Omit<PracticeExamQuestion, 'id'>): Promise<PracticeExamQuestion> {
+    const { data, error } = await supabase
+      .from('practice_exam_questions')
+      .insert([questionData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating question:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  async updateQuestion(id: string, questionData: Partial<PracticeExamQuestion>): Promise<PracticeExamQuestion> {
+    const { data, error } = await supabase
+      .from('practice_exam_questions')
+      .update(questionData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating question:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  async deleteQuestion(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('practice_exam_questions')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting question:', error);
+      throw error;
+    }
   }
 };

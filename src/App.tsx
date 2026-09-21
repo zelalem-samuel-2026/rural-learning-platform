@@ -21,8 +21,9 @@ import { AdminLessonsPage } from '@/pages/admin/AdminLessonsPage';
 import { AdminLessonEditorPage } from '@/pages/admin/AdminLessonEditorPage';
 import { AdminChaptersPage } from '@/pages/admin/AdminChaptersPage';
 import { AdminSubjectsPage } from '@/pages/admin/AdminSubjectsPage';
-import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage'; // 🚀 ቀደም ብሎ የተጨመረ
-import { AdminMockExamEditorPage } from '@/pages/admin/AdminMockExamEditorPage'; // 🚀 አሁን የተጨመረ
+import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage';
+import { AdminMockExamEditorPage } from '@/pages/admin/AdminMockExamEditorPage';
+import { StudentMockExamPage } from '@/pages/StudentMockExamPage'; // 🚀 አሁን የተጨመረ የተማሪዎች ፈተና መስሪያ ገጽ
 import { isAdminRoute } from '@/lib/router';
 
 // 🚀 የ Practice Exams ማውጫ ገጽ
@@ -118,7 +119,7 @@ function AppContent() {
         return <AdminSubjectsPage route={route} navigate={navigate} userRole={userRole} />;
       case 'admin-mock-exams':
         return <AdminMockExamsPage route={route} navigate={navigate} />;
-      case 'admin-mock-exam-edit': // 🚀 አሁን የተጨመረ
+      case 'admin-mock-exam-edit':
         return <AdminMockExamEditorPage route={route as any} navigate={navigate} />;
       default:
         return <AdminDashboardPage route={route} navigate={navigate} userRole={userRole} />;
@@ -141,12 +142,16 @@ function AppContent() {
         return <DashboardPage navigate={navigate} />;
       case 'practice-exams':
         return <MockExamsHomePage navigate={navigate} />;
+      case 'mock-exam': // 🚀 የተማሪዎች ፈተና መስሪያ ራውት
+      case 'practice-exam':
+        return <StudentMockExamPage route={route} navigate={navigate} />;
       default:
         return <HomePage navigate={navigate} />;
     }
   };
 
-  const showFooter = route.name !== 'quiz';
+  // ፈተና ወይም ኩዊዝ ሲሰራ Footer እንዳይታይ መደበቅ
+  const showFooter = route.name !== 'quiz' && route.name !== 'mock-exam' && route.name !== 'practice-exam';
 
   return (
     <div className="min-h-screen flex flex-col bg-ink-50">

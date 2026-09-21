@@ -1,155 +1,227 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { mockExamService } from './mockExamService';
 import { PracticeExam } from './types';
 import type { Route, GradeId } from '@/lib/types';
-import { BookOpen, Clock, ArrowLeft, PlayCircle, CheckCircle } from 'lucide-react';
-import { ExamPlayer } from './ExamPlayer';
+import { BookOpen, Clock, FileText, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface MockExamsHomePageProps {
   navigate: (r: Route) => void;
 }
 
+interface SubjectItem {
+  id: string;
+  name: string;
+  name_am?: string;
+  code?: string;
+  grade_ids?: string[];
+  description?: string;
+}
+
 export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeId>('grade-5');
-  const [selectedSubject, setSelectedSubject] = useState<string>('maths');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
+  
+  const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [exams, setExams] = useState<PracticeExam[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [activeExam, setActiveExam] = useState<PracticeExam | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
+  // 1. ሁሉንም የትምህርት አይነቶች (Subjects) ከ Supabase መጫን
   useEffect(() => {
-    loadExams();
-  }, [selectedGrade, selectedSubject]);
+    fetchSubjects();
+  }, []);
 
-  const loadExams = async () => {
+  // 2. የተመረጠው ክፍል ሲቀየር የፈተናዎችን ዝርዝር ማምጣት
+  useEffect(() => {
+    fetchPublishedExams();
+  }, [selectedGrade]);
+
+  const fetchSubjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching subjects:', error);
+      } else {
+        setSubjects(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load subjects:', err);
+    }
+  };
+
+  const fetchPublishedExams = async () => {
     setLoading(true);
     try {
-      const data = await mockExamService.getExamsBySubject(selectedGrade, selectedSubject);
-      setExams(data || []);
-    } catch (error) {
-      console.error('Failed to load exams:', error);
+      const allExams = await mockExamService.getAllExams();
+      // የሚታዩት 'published' የሆኑ እና ከተመረጠው ክፍል ጋር የሚመሳሰሉ ብቻ ናቸው
+      const published = allExams.filter(
+        (e) => e.status === 'published' && e.grade_id === selectedGrade
+      );
+      setExams(published);
+    } catch (err) {
+      console.error('Error fetching exams:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  if (activeExam) {
-    return (
-      <ExamPlayer
-        exam={activeExam}
-        onClose={() => setActiveExam(null)}
-        onFinish={() => {
-          setActiveExam(null);
-          loadExams();
-        }}
-      />
-    );
-  }
+  // ክፍሎች (5ኛ፣ 6ኛ፣ 7ኛ፣ 8ኛ)
+  const gradesList: { id: GradeId; label: string }[] = [
+    { id: 'grade-5', label: '5ኛ ክፍል' },
+    { id: 'grade-6', label: '6ኛ ክፍል' },
+    { id: 'grade-7', label: '7ኛ ክፍል' },
+    { id: 'grade-8', label: '8ኛ ክፍል' },
+  ];
+
+  // ለተመረጠው ክፍል የሚሆኑ ትምህርቶች ብቻ መለየት
+  const filteredSubjects = subjects.filter((s) => {
+    if (!s.grade_ids || s.grade_ids.length === 0) return true;
+    return s.grade_ids.includes(selectedGrade);
+  });
+
+  // በትምህርት አይነት የመጨረሻ ፊልተር ማድረግ
+  const displayedExams = exams.filter((exam) => {
+    if (selectedSubjectId === 'all') return true;
+    return exam.subject_id === selectedSubjectId;
+  });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => navigate({ name: 'home' })}
-          className="p-2 rounded-lg border border-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">የሙከራ ፈተናዎች (Practice Exams)</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            የክፍል ደረጃ እና የትምህርት አይነት መርጠህ የተዘጋጁ ፈተናዎችን ውሰድ
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white rounded-3xl p-6 sm:p-10 shadow-xl mb-8 relative overflow-hidden">
+        <div className="relative z-10 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold mb-4 border border-white/20">
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>የብሔራዊና ሞዴል ፈተናዎች ልምምድ</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-black mb-3 leading-tight">
+            የሙከራ ፈተናዎች (Practice Exams)
+          </h1>
+          <p className="text-blue-100 text-sm sm:text-base leading-relaxed opacity-90">
+            የክፍል ደረጃህን እና የትምህርት አይነት በመምረጥ የተዘጋጁ የሙከራ ፈተናዎችን ውሰድ፤ እራስህን ፈትነህ ውጤትህን በዝርዝር ገምግም!
           </p>
         </div>
       </div>
 
-      {/* Filters: Grade & Subject Selector */}
-      <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">ክፍል፦</span>
-          <button
-            onClick={() => setSelectedGrade('grade-5')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              selectedGrade === 'grade-5'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            5ኛ ክፍል
-          </button>
-          <button
-            onClick={() => setSelectedGrade('grade-6')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              selectedGrade === 'grade-6'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            6ኛ ክፍል
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-gray-700 dark:text-gray-300">ትምህርት፦</span>
-          <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            className="p-2 border rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600"
-          >
-            <option value="maths">ሒሳብ (Mathematics)</option>
-            <option value="science">ሳይንስ (Science)</option>
-            <option value="english">እንግሊዝኛ (English)</option>
-            <option value="social-studies">ማህበራዊ ሳይንስ (Social Studies)</option>
-          </select>
+      {/* Grade Selector Tabs (5ኛ እስከ 8ኛ ክፍል) */}
+      <div className="mb-6">
+        <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+          1. ክፍል ምረጥ፦
+        </label>
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {gradesList.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => {
+                setSelectedGrade(g.id);
+                setSelectedSubjectId('all'); // ክፍል ሲቀየር ትምህርት ፊልተር reset ይደረጋል
+              }}
+              className={`px-5 py-3 rounded-2xl text-sm font-bold transition-all shrink-0 flex items-center gap-2 ${
+                selectedGrade === g.id
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <span>{g.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Exam List */}
-      {loading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 font-medium">ፈተናዎች እየተጫኑ ነው...</p>
+      {/* Subject Filter Dropdown (ከ Supabase በዲናሚክ የመጡት) */}
+      <div className="mb-8 bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="font-bold text-gray-900 dark:text-white text-sm">
+            2. የትምህርት አይነት ይምረጡ
+          </h3>
+          <p className="text-xs text-gray-500">
+            ለ {gradesList.find((g) => g.id === selectedGrade)?.label} የተመደቡ {filteredSubjects.length} ትምህርቶች አሉ
+          </p>
         </div>
-      ) : exams.length === 0 ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
-          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-300 font-medium">ለዚህ ትምህርት እስካሁን የተለቀቀ ፈተና የለም።</p>
-          <p className="text-sm text-gray-400 mt-1">እባክዎን ሌላ ክፍል ወይም ትምህርት ይምረጡ።</p>
+
+        <select
+          value={selectedSubjectId}
+          onChange={(e) => setSelectedSubjectId(e.target.value)}
+          className="w-full sm:w-64 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="all">ሁሉንም ትምህርቶች አሳይ ({filteredSubjects.length})</option>
+          {filteredSubjects.map((sub) => (
+            <option key={sub.id} value={sub.id}>
+              {sub.name_am || sub.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Exams Grid Display */}
+      {loading ? (
+        <div className="py-16 text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-gray-500 font-medium">ፈተናዎች እየተጫኑ ነው...</p>
+        </div>
+      ) : displayedExams.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 text-center border border-dashed border-gray-300 dark:border-gray-700 my-4">
+          <BookOpen className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+            ለተመረጠው ትምህርት እስካሁን የተለቀቀ ፈተና የለም
+          </h3>
+          <p className="text-xs text-gray-500 max-w-md mx-auto">
+            እባክዎን ሌላ የትምህርት አይነት ወይም ሌላ የክፍል ደረጃ መርጠው ይሞክሩ።
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {exams.map((exam) => (
-            <div
-              key={exam.id}
-              className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
-            >
-              <div>
-                <span className="inline-block px-2.5 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full mb-3">
-                  ተለቋል (Published)
-                </span>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                  {exam.title_am} ({exam.title_en})
-                </h3>
-                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-3 mb-4">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-blue-500" />
-                    የሚመከር ሰዓት፦ {exam.recommended_minutes} ደቂቃ
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-orange-500" />
-                    ከፍተኛው ሰዓት፦ {exam.max_minutes} ደቂቃ
-                  </span>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {displayedExams.map((exam) => {
+            const matchedSubject = subjects.find((s) => s.id === exam.subject_id);
 
-              <button
-                onClick={() => setActiveExam(exam)}
-                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors"
+            return (
+              <div
+                key={exam.id}
+                className="bg-white dark:bg-gray-800 rounded-3xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between group"
               >
-                <PlayCircle className="w-5 h-5" />
-                ፈተናውን ጀምር (Start Exam)
-              </button>
-            </div>
-          ))}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <span className="px-3 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-xs rounded-full">
+                      {matchedSubject?.name_am || matchedSubject?.name || 'ትምህርት'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full">
+                      <CheckCircle className="w-3.5 h-3.5" /> ዝግጁ ነው
+                    </span>
+                  </div>
+
+                  <h3 className="font-extrabold text-gray-900 dark:text-white text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                    {exam.title_am}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-6 line-clamp-1">
+                    {exam.title_en}
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 py-3 px-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl mb-6 text-xs text-gray-600 dark:text-gray-300 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-500" />
+                      <span>{exam.total_questions} ጥያቄዎች</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-amber-500" />
+                      <span>{exam.recommended_minutes} ደቂቃ</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => navigate({ name: 'mock-exam', id: exam.id })}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-2xl flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 group-hover:gap-3 transition-all"
+                >
+                  <span>ፈተናውን ጀምር</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

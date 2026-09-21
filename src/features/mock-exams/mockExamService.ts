@@ -1,7 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { PracticeExam, PracticeExamQuestion } from './types';
+import { PracticeExam, PracticeExamQuestion, PracticeExamAttempt } from './types';
 
 export const mockExamService = {
+  // ----------------------------------------------------
+  // EXAMS CRUD
+  // ----------------------------------------------------
   async getAllExams(): Promise<PracticeExam[]> {
     const { data, error } = await supabase
       .from('practice_exams')
@@ -70,12 +73,15 @@ export const mockExamService = {
     }
   },
 
-  // Questions CRUD
+  // ----------------------------------------------------
+  // QUESTIONS CRUD
+  // ----------------------------------------------------
   async getQuestionsByExamId(examId: string): Promise<PracticeExamQuestion[]> {
     const { data, error } = await supabase
       .from('practice_exam_questions')
       .select('*')
-      .eq('exam_id', examId);
+      .eq('exam_id', examId)
+      .order('question_order', { ascending: true });
 
     if (error) {
       console.error('Error fetching questions:', error);
@@ -123,5 +129,52 @@ export const mockExamService = {
       console.error('Error deleting question:', error);
       throw error;
     }
+  },
+
+  // ----------------------------------------------------
+  // ATTEMPTS & RESULTS SERVICES (PHASE 4)
+  // ----------------------------------------------------
+  async saveExamAttempt(
+    attemptData: Omit<PracticeExamAttempt, 'id' | 'created_at'>
+  ): Promise<PracticeExamAttempt> {
+    const { data, error } = await supabase
+      .from('practice_exam_attempts')
+      .insert([attemptData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving exam attempt:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  async getUserAttempts(userId: string): Promise<PracticeExamAttempt[]> {
+    const { data, error } = await supabase
+      .from('practice_exam_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user attempts:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async getAttemptById(attemptId: string): Promise<PracticeExamAttempt | null> {
+    const { data, error } = await supabase
+      .from('practice_exam_attempts')
+      .select('*')
+      .eq('id', attemptId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching attempt by id:', error);
+      throw error;
+    }
+    return data;
   }
 };

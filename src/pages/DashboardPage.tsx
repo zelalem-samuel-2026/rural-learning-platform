@@ -1,250 +1,208 @@
-import { useEffect, useState } from 'react';
-import {
-  TrendingUp, BookOpen, Trophy, ArrowRight, CheckCircle2,
-  Download, Clock, Target, ChartNoAxesCombined,
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '@/lib/store';
-import { t } from '@/lib/i18n';
-import {
-  fetchProgress, fetchQuizScores, fetchSavedLessons, fetchLesson,
-  getDeviceId, tr, formatDuration,
-} from '@/lib/helpers';
-import type { Route, LessonDB } from '@/lib/types';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { Spinner } from '@/components/ui/Spinner';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { mockExamService } from '@/features/mock-exams/mockExamService';
+import type { Route } from '@/lib/types';
+import { 
+  Trophy, BookOpen, Clock, TrendingUp, ChevronRight, Target, Award, Calendar 
+} from 'lucide-react';
 
 interface DashboardPageProps {
   navigate: (r: Route) => void;
 }
 
-interface ProgressItem {
-  lesson: LessonDB;
-  status: string;
-  percent: number;
-  last_visited: string;
-}
-
-export function DashboardPage({ navigate }: DashboardPageProps) {
-  const { lang } = useStore();
-  const dict = t(lang);
-  const [loading, setLoading] = useState(true);
-  const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
-  const [completedCount, setCompletedCount] = useState(0);
-  const [quizzesPassed, setQuizzesPassed] = useState(0);
-  const [savedLessonIds, setSavedLessonIds] = useState<string[]>([]);
-  const [savedLessons, setSavedLessons] = useState<LessonDB[]>([]);
+export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
+  const { user } = useStore();
+  const [attempts, setAttempts] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const deviceId = getDeviceId();
-        const [progMap, scoreMap, savedSet] = await Promise.all([
-          fetchProgress(deviceId),
-          fetchQuizScores(deviceId),
-          fetchSavedLessons(deviceId),
-        ]);
-
-        // Fetch lesson details for all progress entries
-        const entries = Object.entries(progMap).filter(([, v]) => v.status !== 'not-started');
-        const lessons = await Promise.all(entries.map(([id]) => fetchLesson(id)));
-        const items: ProgressItem[] = entries
-          .map(([id, v], i) => {
-            const l = lessons[i];
-            return l ? { lesson: l, status: v.status, percent: v.percent, last_visited: v.last_visited } : null;
-          })
-          .filter((x): x is ProgressItem => x !== null)
-          .sort((a, b) => new Date(b.last_visited).getTime() - new Date(a.last_visited).getTime());
-
-        if (active) {
-          setProgressItems(items);
-          setCompletedCount(Object.values(progMap).filter((p) => p.status === 'completed').length);
-          setQuizzesPassed(Object.values(scoreMap).filter((s) => s.score / s.total >= 0.6).length);
-          setSavedLessonIds([...savedSet]);
-
-          // Fetch saved lesson details
-          const savedLessonsData = await Promise.all([...savedSet].map((id) => fetchLesson(id)));
-          setSavedLessons(savedLessonsData.filter((l): l is LessonDB => l !== null));
-        }
-      } catch {
-        // silent
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
+    // ገጹ ሲከፈት ከ localStorage የፈተና ውጤቶችን ያመጣል
+    loadProgressFromLocalStorage();
   }, []);
 
-  const continueItems = progressItems.filter((p) => p.status === 'in-progress');
-  const completedItems = progressItems.filter((p) => p.status === 'completed');
-  const totalLessons = 7;
-  const overallPct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const loadProgressFromLocalStorage = async () => {
+    setLoading(true);
+    try {
+      const data = await mockExamService.getUserAttempts();
+      setAttempts(data || []);
+    } catch (err) {
+      console.error('Error loading local progress stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 📊 ከ localStorage የመጡ ስታቲስቲክስ ስሌቶች
+  const completedExamsCount = attempts.length;
+  const totalScoreSum = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
+  const averageScore = completedExamsCount > 0 ? Math.round(totalScoreSum / completedExamsCount) : 0;
+  const highestScore = completedExamsCount > 0 ? Math.max(...attempts.map((a) => a.score || 0)) : 0;
+  const totalCorrectAnswers = attempts.reduce((acc, curr) => acc + (curr.correct_answers || 0), 0);
 
   if (loading) {
-    return <div className="flex justify-center py-24"><Spinner size="lg" /></div>;
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-gray-500 font-medium">የእድገት መረጃህ እየተጫነ ነው...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="animate-fade-in max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 mb-1">{dict.dashboard.title}</h1>
-        <p className="text-ink-500">{dict.dashboard.subtitle}</p>
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6 animate-fade-in">
+      {/* Header Title */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
+          My Progress
+        </h1>
+        <p className="text-xs sm:text-sm text-gray-500">
+          See how far you have come in your practice exams
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
-              <TrendingUp className="w-5 h-5 text-primary-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl sm:text-2xl font-extrabold text-ink-900">{overallPct}%</p>
-              <p className="text-xs text-ink-500">{dict.dashboard.overallProgress}</p>
-            </div>
+      {/* 📊 Top Stats Cards (ከ localStorage የሚነቡ) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Overall Progress / Average Score */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0">
+            <TrendingUp className="w-6 h-6" />
           </div>
-          <ProgressBar value={overallPct} size="sm" />
-        </Card>
-
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-success-100 flex items-center justify-center shrink-0">
-              <BookOpen className="w-5 h-5 text-success-600" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-extrabold text-ink-900">{completedCount}</p>
-              <p className="text-xs text-ink-500">{dict.dashboard.lessonsCompleted}</p>
-            </div>
+          <div>
+            <span className="block text-2xl font-black text-gray-900 dark:text-white">
+              {averageScore}%
+            </span>
+            <span className="text-xs font-semibold text-gray-400">
+              Overall average score
+            </span>
           </div>
-        </Card>
-
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-100 flex items-center justify-center shrink-0">
-              <Trophy className="w-5 h-5 text-accent-600" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-extrabold text-ink-900">{quizzesPassed}</p>
-              <p className="text-xs text-ink-500">{dict.dashboard.quizzesPassed}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Continue learning */}
-      <Card className="p-6 mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-ink-900">{dict.dashboard.continueLearning}</h2>
         </div>
-        <p className="text-sm text-ink-500 mb-4">{dict.dashboard.continueHint}</p>
 
-        {continueItems.length > 0 ? (
-          <div className="space-y-3">
-            {continueItems.slice(0, 3).map((item) => (
-              <button
-                key={item.lesson.id}
-                onClick={() => navigate({ name: 'lesson', id: item.lesson.id })}
-                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-ink-50 transition-colors text-left group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-accent-100 flex items-center justify-center shrink-0 font-bold text-accent-600">
-                  {item.lesson.order}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-ink-900 truncate group-hover:text-primary-700 transition-colors">
-                    {tr({ en: item.lesson.title_en, am: item.lesson.title_am }, lang)}
-                  </p>
-                  <div className="h-1.5 w-full bg-ink-100 rounded-full overflow-hidden mt-2">
-                    <div className="h-full bg-accent-500 rounded-full transition-all" style={{ width: `${item.percent}%` }} />
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-ink-400 group-hover:text-primary-600 shrink-0" />
-              </button>
-            ))}
+        {/* Exams Completed */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center shrink-0">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="block text-2xl font-black text-gray-900 dark:text-white">
+              {completedExamsCount}
+            </span>
+            <span className="text-xs font-semibold text-gray-400">
+              Exams completed
+            </span>
+          </div>
+        </div>
+
+        {/* Best Score */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
+            <Trophy className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="block text-2xl font-black text-gray-900 dark:text-white">
+              {highestScore}%
+            </span>
+            <span className="text-xs font-semibold text-gray-400">
+              Highest score achieved
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 📋 የተሰሩ የሙከራ ፈተናዎች ዝርዝር (History) */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">
+            Practice Exams History
+          </h2>
+          <button
+            onClick={() => navigate({ name: 'practice-exams' })}
+            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+          >
+            <span>Take new exam</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {attempts.length === 0 ? (
+          <div className="text-center py-10 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-xl">
+            <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-xs font-bold text-gray-500 mb-3">No completed exams yet</p>
+            <button
+              onClick={() => navigate({ name: 'practice-exams' })}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+            >
+              Start Practice Exam
+            </button>
           </div>
         ) : (
-          <EmptyState
-            icon={<BookOpen className="w-7 h-7" />}
-            title={dict.dashboard.noProgress}
-            hint={dict.dashboard.noProgressHint}
-            action={<Button size="sm" onClick={() => navigate({ name: 'home' })}>{dict.dashboard.browseLessons}</Button>}
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-gray-700 text-xs font-extrabold text-gray-400 uppercase">
+                  <th className="py-3 px-3">Exam Title</th>
+                  <th className="py-3 px-3">Score</th>
+                  <th className="py-3 px-3">Correct / Total</th>
+                  <th className="py-3 px-3">Time Spent</th>
+                  <th className="py-3 px-3">Date</th>
+                  <th className="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50 text-xs sm:text-sm">
+                {attempts.map((att) => {
+                  const examTitle = att.practice_exams?.title_am || att.practice_exams?.title_en || 'Practice Exam';
+                  const score = att.score || 0;
+                  const formattedDate = new Date(att.created_at).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+
+                  const mins = Math.floor((att.time_spent_seconds || 0) / 60);
+                  const secs = (att.time_spent_seconds || 0) % 60;
+
+                  return (
+                    <tr key={att.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
+                      <td className="py-3.5 px-3 font-bold text-gray-800 dark:text-gray-200">
+                        {examTitle}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-black ${
+                          score >= 75
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : score >= 50
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {score}%
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-600 dark:text-gray-400 font-medium">
+                        {att.correct_answers} / {att.total_questions}
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-500">
+                        {mins}m {secs}s
+                      </td>
+                      <td className="py-3.5 px-3 text-gray-400">
+                        {formattedDate}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <button
+                          onClick={() => navigate({ name: 'practice-exams' })}
+                          className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-bold"
+                        >
+                          Retake
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
-      </Card>
-
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Completed lessons */}
-        <Card className="p-6">
-          <h2 className="text-lg font-bold text-ink-900 mb-4 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-success-500" />
-            {dict.dashboard.completedLessons}
-          </h2>
-          {completedItems.length > 0 ? (
-            <div className="space-y-2">
-              {completedItems.slice(0, 5).map((item) => (
-                <button
-                  key={item.lesson.id}
-                  onClick={() => navigate({ name: 'lesson', id: item.lesson.id })}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-ink-50 transition-colors text-left"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-success-500 shrink-0" />
-                  <span className="text-sm text-ink-700 truncate flex-1">
-                    {tr({ en: item.lesson.title_en, am: item.lesson.title_am }, lang)}
-                  </span>
-                  <Clock className="w-3.5 h-3.5 text-ink-400 shrink-0" />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Target className="w-6 h-6" />}
-              title={dict.dashboard.noCompleted}
-            />
-          )}
-        </Card>
-
-        {/* Saved for offline */}
-        <Card className="p-6">
-          <h2 className="text-lg font-bold text-ink-900 mb-4 flex items-center gap-2">
-            <Download className="w-5 h-5 text-primary-500" />
-            {dict.dashboard.savedLessons}
-          </h2>
-          {savedLessons.length > 0 ? (
-            <div className="space-y-2">
-              {savedLessons.slice(0, 5).map((lesson) => (
-                <button
-                  key={lesson.id}
-                  onClick={() => navigate({ name: 'lesson', id: lesson.id })}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-ink-50 transition-colors text-left"
-                >
-                  <Download className="w-4 h-4 text-success-500 shrink-0" />
-                  <span className="text-sm text-ink-700 truncate flex-1">
-                    {tr({ en: lesson.title_en, am: lesson.title_am }, lang)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={<Download className="w-6 h-6" />}
-              title={dict.dashboard.noSaved}
-              hint={dict.dashboard.savedHint}
-            />
-          )}
-        </Card>
       </div>
-
-      {/* CTA */}
-      {progressItems.length === 0 && (
-        <Card className="p-8 mt-6 bg-gradient-to-br from-primary-50 to-accent-50 border-0 text-center">
-          <ChartNoAxesCombined className="w-12 h-12 text-primary-600 mx-auto mb-3" />
-          <h3 className="font-bold text-ink-900 text-lg mb-1">{dict.dashboard.startStudying}</h3>
-          <p className="text-sm text-ink-600 mb-5">{dict.dashboard.noProgressHint}</p>
-          <Button onClick={() => navigate({ name: 'home' })}>{dict.dashboard.browseLessons}</Button>
-        </Card>
-      )}
     </div>
   );
-}
+};

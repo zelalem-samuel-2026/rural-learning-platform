@@ -137,9 +137,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         setShowFormModal(false);
         fetchExams();
       } else {
-        // 🚀 total_questions ሙሉ በሙሉ ጠፍቷል፤ formData ብቻ ይላካል
         const newExam = await mockExamService.createExam(formData);
-        
         alert('አዲስ ፈተና በስኬት ተፈጥሯል!');
         setShowFormModal(false);
         
@@ -164,6 +162,17 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       fetchExams();
     } catch (err: any) {
       alert(`ማጥፋት አልተሳካም፦ ${err.message}`);
+    }
+  };
+
+  // የክፍል ስም ማሳያ Helper
+  const getGradeLabel = (gradeId: string) => {
+    switch (gradeId) {
+      case 'grade-5': return '5ኛ ክፍል';
+      case 'grade-6': return '6ኛ ክፍል';
+      case 'grade-7': return '7ኛ ክፍል';
+      case 'grade-8': return '8ኛ ክፍል';
+      default: return gradeId;
     }
   };
 
@@ -226,7 +235,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                     {exam.status === 'published' ? 'Published' : 'Draft'}
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md">
-                    {exam.grade_id === 'grade-5' ? '5ኛ ክፍል' : '6ኛ ክፍል'}
+                    {getGradeLabel(exam.grade_id)}
                   </span>
                 </div>
 
@@ -323,6 +332,8 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   >
                     <option value="grade-5">5ኛ ክፍል</option>
                     <option value="grade-6">6ኛ ክፍል</option>
+                    <option value="grade-7">7ኛ ክፍል</option>
+                    <option value="grade-8">8ኛ ክፍል</option>
                   </select>
                 </div>
 

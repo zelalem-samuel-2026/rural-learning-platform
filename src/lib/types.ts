@@ -115,4 +115,5 @@ export type Route =
   | { name: 'admin-lessons' }
   | { name: 'admin-lesson-edit'; id?: string }
   | { name: 'admin-chapters' }
-  | { name: 'admin-subjects' };
+  | { name: 'admin-subjects' }
+  | { name: 'practice-exams' };

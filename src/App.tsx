@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { Login } from './Login'; 
 
 import { AppStoreProvider, useStore } from '@/lib/store';
-import { useRouter } from '@/lib/router';
+import { useRouter, isAdminRoute } from '@/lib/router';
 import { Navbar } from '@/components/Navbar';
 import { BottomNav } from '@/components/BottomNav';
 import { Footer } from '@/components/Footer';
@@ -15,8 +14,7 @@ import { GradePage } from '@/pages/GradePage';
 import { SubjectPage } from '@/pages/SubjectPage';
 import { LessonPage } from '@/pages/LessonPage';
 import { QuizPage } from '@/pages/QuizPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { StudentProgressPage } from '@/pages/StudentProgressPage'; // 🚀 የተማሪዎች Progress Dashboard ገጽ
+import { StudentProgressPage } from '@/pages/StudentProgressPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminLessonsPage } from '@/pages/admin/AdminLessonsPage';
 import { AdminLessonEditorPage } from '@/pages/admin/AdminLessonEditorPage';
@@ -25,10 +23,7 @@ import { AdminSubjectsPage } from '@/pages/admin/AdminSubjectsPage';
 import { AdminMockExamsPage } from '@/pages/admin/AdminMockExamsPage';
 import { AdminMockExamEditorPage } from '@/pages/admin/AdminMockExamEditorPage';
 import { StudentMockExamPage } from '@/pages/StudentMockExamPage';
-import { isAdminRoute } from '@/lib/router';
-
-// 🚀 የ Practice Exams ማውጫ ገጽ
-import { MockExamsHomePage } from '@/features/mock-exams/MockExamsHomePage'; 
+import { MockExamsHomePage } from '@/features/mock-exams/MockExamsHomePage';
 
 function AppContent() {
   const { route, navigate } = useRouter();
@@ -39,7 +34,6 @@ function AppContent() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    // መጀመሪያ ሲከፈት ሴሽን እንዳለ ማረጋገጥ
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) console.error("Session error:", error);
       setSession(session);
@@ -47,7 +41,6 @@ function AppContent() {
       else setAuthLoading(false);
     });
 
-    // ሎጊን/ሎግአውት ሲደረግ ማዳመጥ (Listen)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) fetchUserRole(session.user.id);
@@ -76,14 +69,12 @@ function AppContent() {
     }
   };
 
-  // Sync with app language
   useEffect(() => {
     if (typeof document !== 'undefined') {
-      document.documentElement.lang = lang;
+      document.documentElement.lang = lang || 'am';
     }
   }, [lang]);
 
-  // 1. መረጃው እስኪጣራ ድረስ በመጫን ላይ ማሳየት
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -92,9 +83,8 @@ function AppContent() {
     );
   }
 
-  const isAdminPage = isAdminRoute(route);
+  const isAdminPage = (route && typeof route === 'object' && 'name' in route) ? isAdminRoute(route) : false;
 
-  // 2. አድሚን ገፆች ላይ አድሚን ያልሆነ ሰው ከገባ መከልከል
   if (isAdminPage && userRole !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -112,9 +102,10 @@ function AppContent() {
     );
   }
 
-  // 3. የገጾች መምረጫ (Routing Logic)
   const renderPage = () => {
-    switch (route.name) {
+    const routeName = route?.name || 'home';
+
+    switch (routeName) {
       case 'home':
         return <HomePage navigate={navigate} />;
       case 'grade':
@@ -126,19 +117,15 @@ function AppContent() {
       case 'quiz':
         return <QuizPage navigate={navigate} />;
         
-      // 🚀 ዋናው ማስተካከያ እዚህ ላይ ነው
-      // "My Progress" ስትጫን አዲሱ ቆንጆ ፔጅ እንዲመጣ 'dashboard' ሆነ 'progress' ወደ StudentProgressPage እንዲወስድ አድርጌዋለሁ::
       case 'dashboard':
       case 'progress':
         return <StudentProgressPage navigate={navigate} />;
       
-      // የሙከራ ፈተናዎች
       case 'practice-exams':
         return <MockExamsHomePage navigate={navigate} />;
       case 'mock-exam':
         return <StudentMockExamPage navigate={navigate} />;
 
-      // የአድሚን ገጾች
       case 'admin':
         return <AdminDashboardPage navigate={navigate} />;
       case 'admin-lessons':
@@ -165,7 +152,6 @@ function AppContent() {
       
       {!isAdminPage && <Navbar navigate={navigate} currentRoute={route} />}
       
-      {/* ዋናው የገፅ ይዘት */}
       <main className={`flex-1 flex flex-col relative ${!isAdminPage ? 'pb-20 md:pb-0' : ''}`}>
         <div className="flex-1 w-full mx-auto">
           {renderPage()}

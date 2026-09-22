@@ -90,7 +90,7 @@ function AppContent() {
     return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
   }
 
-  if (isAdminPage && userRole !== 'admin') {
+  if (isAdminPage && userRole !== 'admin' && userRole !== 'teacher') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">

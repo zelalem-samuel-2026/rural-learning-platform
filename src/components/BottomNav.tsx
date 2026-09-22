@@ -4,11 +4,13 @@ import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
 
 interface BottomNavProps {
-  route: Route;
+  route?: Route;
+  currentRoute?: Route;
   navigate: (r: Route) => void;
 }
 
-export function BottomNav({ route, navigate }: BottomNavProps) {
+export function BottomNav({ route, currentRoute, navigate }: BottomNavProps) {
+  const activeRoute = currentRoute || route;
   const { lang } = useStore();
   const dict = t(lang);
 
@@ -18,7 +20,7 @@ export function BottomNav({ route, navigate }: BottomNavProps) {
     { icon: Settings, label: dict.nav.admin, route: { name: 'admin' } },
   ];
 
-  const isActive = (r: Route) => r.name === route.name;
+  const isActive = (r: Route) => r.name === activeRoute?.name;
 
   return (
     <nav

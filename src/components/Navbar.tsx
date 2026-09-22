@@ -7,11 +7,13 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from './ui/Button';
 
 interface NavbarProps {
-  route: Route;
+  route?: Route;
+  currentRoute?: Route;
   navigate: (r: Route) => void;
 }
 
-export function Navbar({ route, navigate }: NavbarProps) {
+export function Navbar({ route, currentRoute, navigate }: NavbarProps) {
+  const activeRoute = currentRoute || route;
   const { lang } = useStore();
   const dict = t(lang);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,7 +29,7 @@ export function Navbar({ route, navigate }: NavbarProps) {
     { label: dict.nav.admin, route: { name: 'admin' }, icon: Settings },
   ];
 
-  const isActive = (r: Route) => r.name === route.name;
+  const isActive = (r: Route) => r.name === activeRoute?.name;
   const go = (r: Route) => { navigate(r); setMenuOpen(false); };
 
   return (

@@ -116,7 +116,7 @@ function AppContent() {
       case 'grade':
         return <GradePage navigate={navigate} />;
       case 'subject':
-        return <SubjectPage navigate={navigate} />;
+        return <SubjectPage gradeId={route.gradeId} subjectId={route.subjectId} navigate={navigate as never} />;
       case 'lesson':
         return <LessonPage navigate={navigate} />;
       case 'quiz':

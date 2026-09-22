@@ -132,19 +132,19 @@ function AppContent() {
         return <StudentMockExamPage navigate={navigate} />;
 
       case 'admin':
-        return <AdminDashboardPage navigate={navigate} />;
+        return <AdminDashboardPage route={route as never} navigate={navigate as never} userRole={userRole} />;
       case 'admin-lessons':
-        return <AdminLessonsPage navigate={navigate} />;
-      case 'admin-lesson-editor':
-        return <AdminLessonEditorPage navigate={navigate} />;
+        return <AdminLessonsPage route={route as never} navigate={navigate as never} userRole={userRole} />;
+      case 'admin-lesson-edit':
+        return <AdminLessonEditorPage route={route as never} navigate={navigate as never} lessonId={route.id} />;
       case 'admin-chapters':
-        return <AdminChaptersPage navigate={navigate} />;
+        return <AdminChaptersPage route={route as never} navigate={navigate as never} userRole={userRole} />;
       case 'admin-subjects':
-        return <AdminSubjectsPage navigate={navigate} />;
+        return <AdminSubjectsPage route={route as never} navigate={navigate as never} userRole={userRole} />;
       case 'admin-mock-exams':
-        return <AdminMockExamsPage navigate={navigate} />;
-      case 'admin-mock-exam-editor':
-        return <AdminMockExamEditorPage navigate={navigate} />;
+        return <AdminMockExamsPage route={route as never} navigate={navigate as never} />;
+      case 'admin-mock-exam-edit':
+        return <AdminMockExamEditorPage route={route as never} navigate={navigate as never} />;
         
       default:
         return <HomePage navigate={navigate} />;

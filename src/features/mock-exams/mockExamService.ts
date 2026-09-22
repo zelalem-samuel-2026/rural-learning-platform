@@ -3,9 +3,9 @@ import { PracticeExam, PracticeExamQuestion, PracticeExamAttempt } from './types
 
 export const mockExamService = {
   // ----------------------------------------------------
-  // EXAMS CRUD (ከ Supabase ይቀጥላል)
+  // EXAMS CRUD
   // ----------------------------------------------------
-  async getAllExams(): Promise {
+  async getAllExams(): Promise<PracticeExam[]> {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
@@ -13,12 +13,12 @@ export const mockExamService = {
 
     if (error) {
       console.error('Error fetching exams:', error);
-      throw error;
+      return [];
     }
     return data || [];
   },
 
-  async getExamById(id: string): Promise {
+  async getExamById(id: string): Promise<PracticeExam | null> {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
@@ -27,12 +27,12 @@ export const mockExamService = {
 
     if (error) {
       console.error('Error fetching exam by id:', error);
-      throw error;
+      return null;
     }
     return data;
   },
 
-  async createExam(examData: Omit): Promise {
+  async createExam(examData: Omit<PracticeExam, 'id' | 'created_at'>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
       .insert([examData])
@@ -46,7 +46,7 @@ export const mockExamService = {
     return data;
   },
 
-  async updateExam(id: string, examData: Partial): Promise {
+  async updateExam(id: string, examData: Partial<PracticeExam>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
       .update(examData)
@@ -61,7 +61,7 @@ export const mockExamService = {
     return data;
   },
 
-  async deleteExam(id: string): Promise {
+  async deleteExam(id: string): Promise<void> {
     const { error } = await supabase
       .from('practice_exams')
       .delete()
@@ -74,9 +74,9 @@ export const mockExamService = {
   },
 
   // ----------------------------------------------------
-  // QUESTIONS CRUD (ከ Supabase ይቀጥላል)
+  // QUESTIONS CRUD
   // ----------------------------------------------------
-  async getQuestionsByExamId(examId: string): Promise {
+  async getQuestionsByExamId(examId: string): Promise<PracticeExamQuestion[]> {
     const { data, error } = await supabase
       .from('practice_exam_questions')
       .select('*')
@@ -90,7 +90,7 @@ export const mockExamService = {
     return data || [];
   },
 
-  async createQuestion(questionData: Omit): Promise {
+  async createQuestion(questionData: Omit<PracticeExamQuestion, 'id' | 'created_at'>): Promise<PracticeExamQuestion> {
     const { data, error } = await supabase
       .from('practice_exam_questions')
       .insert([questionData])
@@ -104,7 +104,7 @@ export const mockExamService = {
     return data;
   },
 
-  async updateQuestion(id: string, questionData: Partial): Promise {
+  async updateQuestion(id: string, questionData: Partial<PracticeExamQuestion>): Promise<PracticeExamQuestion> {
     const { data, error } = await supabase
       .from('practice_exam_questions')
       .update(questionData)
@@ -119,7 +119,7 @@ export const mockExamService = {
     return data;
   },
 
-  async deleteQuestion(id: string): Promise {
+  async deleteQuestion(id: string): Promise<void> {
     const { error } = await supabase
       .from('practice_exam_questions')
       .delete()
@@ -132,52 +132,117 @@ export const mockExamService = {
   },
 
   // ----------------------------------------------------
-  // ATTEMPTS & RESULTS SERVICES (የ LocalStorage አሰራር)
+  // ATTEMPTS & RESULTS SERVICES (Hybrid LocalStorage + Supabase)
   // ----------------------------------------------------
 
-  // 📱 የፈተና ውጤትን በተማሪው ስልክ memory (localStorage) ማስቀመጫ
-  async saveExamAttempt(
-    attemptData: Omit & { practice_exams?: any }
-  ): Promise {
+  // 📱 የፈተና ውጤትን በቅጽበት ማስቀመጫ
+  async saveExamAttempt(attemptData: any): Promise<any> {
     try {
-      const existingStr = localStorage.getItem('mock_exam_attempts');
-      const existing = existingStr ? JSON.parse(existingStr) : [];
+      // 1. የፈተናው ርዕስ ከሌለ ከፈተናዎች ዝርዝር ፈልጎ አብሮ ይይዛል
+      let practiceExamsData = attemptData.practice_exams;
+      if (!practiceExamsData && attemptData.exam_id) {
+        try {
+          practiceExamsData = await this.getExamById(attemptData.exam_id);
+        } catch (e) {
+          console.warn('Could not fetch exam details for title:', e);
+        }
+      }
 
       const newAttempt = {
         ...attemptData,
-        id: 'local_' + Date.now(),
-        created_at: new Date().toISOString(),
+        id: attemptData.id || 'local_' + Date.now(),
+        practice_exams: practiceExamsData || { title_am: 'የሙከራ ፈተና', title_en: 'Practice Exam' },
+        created_at: attemptData.created_at || new Date().toISOString(),
       };
 
-      const updated = [newAttempt, ...existing];
+      // 2. በ LocalStorage ውስጥ ወዲያውኑ ያስቀምጣል
+      const existingStr = localStorage.getItem('mock_exam_attempts');
+      const existing = existingStr ? JSON.parse(existingStr) : [];
+      
+      const filtered = existing.filter((item: any) => item.id !== newAttempt.id);
+      const updated = [newAttempt, ...filtered];
       localStorage.setItem('mock_exam_attempts', JSON.stringify(updated));
+
+      // 3. ተማሪው Login አድርጎ ከሆነ ወደ Supabase ዳታቤዝም ይልከዋል
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          const dbPayload = {
+            user_id: userData.user.id,
+            exam_id: attemptData.exam_id,
+            score: attemptData.score || 0,
+            total_questions: attemptData.total_questions || 0,
+            correct_answers: attemptData.correct_answers || 0,
+            time_spent_seconds: attemptData.time_spent_seconds || 0,
+          };
+          await supabase.from('practice_exam_attempts').insert([dbPayload]);
+        }
+      } catch (dbErr) {
+        console.warn('Supabase sync skipped:', dbErr);
+      }
+
       return newAttempt;
     } catch (error) {
-      console.error('Error saving exam attempt to localStorage:', error);
+      console.error('Error saving exam attempt:', error);
       throw error;
     }
   },
 
-  // 📱 በስልኩ የተቀመጡ ውጤቶችን በሙሉ አውጥቶ ማሳያ
-  async getUserAttempts(_userId?: string): Promise {
-    try {
-      const existingStr = localStorage.getItem('mock_exam_attempts');
-      const attempts = existingStr ? JSON.parse(existingStr) : [];
-      return attempts;
-    } catch (error) {
-      console.error('Error fetching attempts from localStorage:', error);
-      return [];
-    }
+  // 📱 ሁለቱንም ጥሪዎች (saveAttempt እና saveExamAttempt) እንዲቀበል የተደረገ Alias
+  async saveAttempt(attemptData: any): Promise<any> {
+    return this.saveExamAttempt(attemptData);
   },
 
-  // 📱 አንድን የፈተና ውጤት በ ID ፈልጎ ማምጫ
-  async getAttemptById(attemptId: string): Promise {
+  // 📱 በስልኩና በዳታቤዝ ያሉትን ውጤቶች በሙሉ አዋህዶ አውቶማቲክ ማሳያ
+  async getUserAttempts(_userId?: string): Promise<any[]> {
+    let localAttempts: any[] = [];
     try {
       const existingStr = localStorage.getItem('mock_exam_attempts');
-      const attempts = existingStr ? JSON.parse(existingStr) : [];
+      localAttempts = existingStr ? JSON.parse(existingStr) : [];
+    } catch (error) {
+      console.error('Error fetching attempts from localStorage:', error);
+    }
+
+    let remoteAttempts: any[] = [];
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        const { data, error } = await supabase
+          .from('practice_exam_attempts')
+          .select('*, practice_exams(*)')
+          .eq('user_id', userData.user.id)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          remoteAttempts = data;
+        }
+      }
+    } catch (remoteErr) {
+      console.warn('Supabase remote attempts fetch skipped:', remoteErr);
+    }
+
+    // የሁለቱን ውጤቶች ማዋሃድ እና ደጋግመው እንዳይመጡ ማድረግ
+    const combinedMap = new Map<string, any>();
+    [...remoteAttempts, ...localAttempts].forEach((att) => {
+      if (att && att.id) {
+        if (!combinedMap.has(att.id)) {
+          combinedMap.set(att.id, att);
+        }
+      }
+    });
+
+    const combined = Array.from(combinedMap.values());
+    combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return combined;
+  },
+
+  async getAttemptById(attemptId: string): Promise<any> {
+    try {
+      const attempts = await this.getUserAttempts();
       return attempts.find((att: any) => att.id === attemptId) || null;
     } catch (error) {
-      console.error('Error fetching attempt by id from localStorage:', error);
+      console.error('Error fetching attempt by id:', error);
       return null;
     }
   }

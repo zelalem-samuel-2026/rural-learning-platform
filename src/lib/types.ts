@@ -1,6 +1,6 @@
 export type Lang = 'en' | 'am';
 
-export type GradeId = 'grade-5' | 'grade-6';
+export type GradeId = 'grade-5' | 'grade-6' | 'grade-7' | 'grade-8';
 export type SubjectId = string;
 
 export interface Bilingual {

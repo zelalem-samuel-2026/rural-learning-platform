@@ -46,14 +46,14 @@ export async function fetchSubjects(): Promise<Subject[]> {
 }
 
 export async function fetchSubjectsForGrade(gradeId: string): Promise<Subject[]> {
-  const { data: mappings, error: mErr } = await supabase
-    .from('grade_subjects').select('subject_id').eq('grade_id', gradeId);
-  if (mErr) throw mErr;
-  if (!mappings || mappings.length === 0) return [];
-  const subjectIds = mappings.map((m: any) => m.subject_id);
-  const { data, error } = await supabase.from('subjects').select('*').in('id', subjectIds);
+  const { data, error } = await supabase
+    .from('grade_subjects')
+    .select('subject_id, subjects(*)')
+    .eq('grade_id', gradeId);
   if (error) throw error;
-  return (data ?? []).map(parseSubjectRow);
+  return (data ?? [])
+    .map((mapping: any) => mapping.subjects ? parseSubjectRow(mapping.subjects) : null)
+    .filter((subject): subject is Subject => subject !== null);
 }
 
 export async function fetchChapters(gradeId: string, subjectId: string): Promise<Chapter[]> {

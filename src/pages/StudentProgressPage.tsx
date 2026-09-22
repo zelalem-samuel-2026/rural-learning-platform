@@ -243,3 +243,4 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
     </div>
   );
 };
+

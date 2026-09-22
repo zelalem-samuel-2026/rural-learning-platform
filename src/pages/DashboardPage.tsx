@@ -1,38 +1,33 @@
 import React, { useEffect, useState } from 'react';
-import { useStore } from '@/lib/store';
 import { mockExamService } from '@/features/mock-exams/mockExamService';
 import type { Route } from '@/lib/types';
-import { 
-  TrendingUp, BookOpen, Award, ChevronRight, Clock, Calendar, CheckCircle2 
-} from 'lucide-react';
+import { TrendingUp, BookOpen, Award, ChevronRight, CheckCircle2 } from 'lucide-react';
 
-interface DashboardPageProps {
-  navigate: (r: Route) => void;
+interface StudentProgressProps {
+  navigate?: (r: Route) => void;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
-  const { user } = useStore();
+export const StudentProgressPage: React.FC<StudentProgressProps> = ({ navigate }) => {
   const [attempts, setAttempts] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // ገጹ ሲከፈት ከ localStorage የፈተና መረጃዎችን ያመጣል
-    loadStudentProgress();
+    // ከ localStorage የሰሩትን የፈተና ውጤት ያነባል
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const data = await mockExamService.getUserAttempts();
+        setAttempts(data || []);
+      } catch (err) {
+        console.error('Error loading local exam progress:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const loadStudentProgress = async () => {
-    setLoading(true);
-    try {
-      const data = await mockExamService.getUserAttempts();
-      setAttempts(data || []);
-    } catch (err) {
-      console.error('Error loading local progress:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 📊 ስታቲስቲክስ ስሌቶች ከ localStorage
+  // 📊 ከ localStorage የመጡ የውጤት ስሌቶች
   const completedExamsCount = attempts.length;
   const totalScoreSum = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
   const averageScore = completedExamsCount > 0 ? Math.round(totalScoreSum / completedExamsCount) : 0;
@@ -40,18 +35,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-xs text-gray-500 font-medium">የእድገት መረጃህ እየተጫነ ነው...</p>
-        </div>
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md sm:max-w-3xl mx-auto px-4 py-5 space-y-6 animate-fade-in">
-      {/* getHeader */}
+    <div className="max-w-md sm:max-w-3xl mx-auto px-4 py-5 space-y-6">
+      {/* Title Header */}
       <div>
         <h1 className="text-2xl font-black text-gray-900 dark:text-white">
           My Progress
@@ -61,10 +53,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
         </p>
       </div>
 
-      {/* 📈 3ቱ ዋና ካርዶች (በስክሪንሾቱ መሰረት የተስተካከሉ) */}
+      {/* 📊 3ቱ ዋና የውጤት ካርዶች */}
       <div className="grid grid-cols-3 gap-3">
         {/* Overall Progress */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 text-center shadow-sm">
           <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-1.5">
             <TrendingUp className="w-4 h-4" />
           </div>
@@ -77,7 +69,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
         </div>
 
         {/* Exams Completed */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 text-center shadow-sm">
           <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-1.5">
             <BookOpen className="w-4 h-4" />
           </div>
@@ -89,8 +81,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
           </span>
         </div>
 
-        {/* Quizzes / Exams Passed */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 shadow-sm text-center">
+        {/* Quizzes Passed */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 text-center shadow-sm">
           <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-1.5">
             <Award className="w-4 h-4" />
           </div>
@@ -103,38 +95,42 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
         </div>
       </div>
 
-      {/* 📝 Practice Exam Progress Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+      {/* 📋 የሰሩዋቸው ፈተናዎች ዝርዝር */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-900 dark:text-white">
-            Practice Exams Progress
+            Completed Practice Exams
           </h2>
-          <button
-            onClick={() => navigate({ name: 'practice-exams' })}
-            className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
-          >
-            <span>Take Exam</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          {navigate && (
+            <button
+              onClick={() => navigate({ name: 'practice-exams' })}
+              className="text-xs font-bold text-emerald-600 flex items-center gap-0.5"
+            >
+              <span>Take Exam</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {attempts.length === 0 ? (
           <div className="text-center py-8 border-2 border-dashed border-gray-100 dark:border-gray-700 rounded-xl">
             <BookOpen className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-xs text-gray-500 mb-3">No exam attempts recorded yet.</p>
-            <button
-              onClick={() => navigate({ name: 'practice-exams' })}
-              className="px-3.5 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm"
-            >
-              Go to Practice Exams
-            </button>
+            <p className="text-xs text-gray-500 mb-2">No completed exams found in local storage.</p>
+            {navigate && (
+              <button
+                onClick={() => navigate({ name: 'practice-exams' })}
+                className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold"
+              >
+                Go to Practice Exams
+              </button>
+            )}
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {attempts.map((att) => {
               const examTitle = att.practice_exams?.title_am || att.practice_exams?.title_en || 'Practice Exam';
               const score = att.score || 0;
-              const formattedDate = new Date(att.created_at).toLocaleDateString('en-US', {
+              const dateStr = new Date(att.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric'
               });
@@ -144,28 +140,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ navigate }) => {
                   key={att.id} 
                   className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-700/40 border border-gray-100 dark:border-gray-700"
                 >
-                  <div className="space-y-0.5">
+                  <div>
                     <h3 className="text-xs font-bold text-gray-800 dark:text-gray-200">
                       {examTitle}
                     </h3>
-                    <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                      <span>{formattedDate}</span>
-                      <span>•</span>
-                      <span>{att.correct_answers}/{att.total_questions} correct</span>
-                    </div>
+                    <p className="text-[10px] text-gray-400">
+                      {dateStr} • {att.correct_answers}/{att.total_questions} correct
+                    </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-black ${
-                      score >= 75
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : score >= 50
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {score}%
-                    </span>
-                  </div>
+                  <span className={`px-2 py-0.5 rounded-md text-xs font-black ${
+                    score >= 75
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : score >= 50
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {score}%
+                  </span>
                 </div>
               );
             })}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { Login } from './Login';
 
 import { AppStoreProvider, useStore } from '@/lib/store';
 import { useRouter, isAdminRoute } from '@/lib/router';
@@ -84,6 +85,10 @@ function AppContent() {
   }
 
   const isAdminPage = (route && typeof route === 'object' && 'name' in route) ? isAdminRoute(route) : false;
+
+  if (isAdminPage && !session) {
+    return <Login onLoginSuccess={() => window.location.href = '/#/admin'} />;
+  }
 
   if (isAdminPage && userRole !== 'admin') {
     return (

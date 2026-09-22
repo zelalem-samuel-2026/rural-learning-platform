@@ -2,25 +2,12 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
-import { tr, fetchSubjectsForGrade } from '@/lib/helpers';
-import type { Route, Subject } from '@/lib/types';
+import { tr, fetchChapters, fetchSubjectsForGrade } from '@/lib/helpers';
+import type { Chapter, Route, Subject } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { SubjectIcon } from '@/components/SubjectIcon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { supabase } from '@/lib/supabase';
-
-interface ChapterDB {
-  id: string;
-  subject_id: string;
-  grade_id: string;
-  title_en: string;
-  title_am: string;
-  description_en: string;
-  description_am: string;
-  order: number;
-}
-
 interface SubjectPageProps {
   gradeId: string;
   subjectId: string;
@@ -30,7 +17,7 @@ interface SubjectPageProps {
 export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
-  const [chapters, setChapters] = useState<ChapterDB[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,13 +25,13 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
     let active = true;
     (async () => {
       try {
-        const [subs, { data: chapterList }] = await Promise.all([
+        const [subs, chapterList] = await Promise.all([
           fetchSubjectsForGrade(gradeId),
-          supabase.from('chapters').select('*').eq('grade_id', gradeId).eq('subject_id', subjectId).order('order', { ascending: true })
+          fetchChapters(gradeId, subjectId),
         ]);
         if (active) {
           setSubject(subs.find((s) => s.id === subjectId) ?? null);
-          setChapters(chapterList || []);
+          setChapters(chapterList);
         }
       } catch (err) {
         console.error(err);
@@ -85,7 +72,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
           <p className="text-sm text-ink-500 mb-2 font-medium">
             {chapters.length} ዩኒቶች (Chapters)
           </p>
-          {chapters.map((chapter, idx) => {
+          {chapters.map((chapter) => {
             return (
               <div
                 key={chapter.id}
@@ -93,7 +80,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
               >
                 {/* Chapter order number */}
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg bg-primary-50 text-primary-600">
-                  {idx + 1}
+                  {chapter.order}
                 </div>
 
                 <div className="flex-1 min-w-0">

@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface QuizPageProps {
-  lessonId: string;
+  lessonId?: string;
   navigate: (r: Route) => void;
 }
 
@@ -25,6 +25,7 @@ type Phase = 'taking' | 'results';
 export function QuizPage({ lessonId, navigate }: QuizPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
+  const resolvedLessonId = lessonId || decodeURIComponent(window.location.hash.match(/^#\/quiz\/([^/]+)/)?.[1] ?? '');
   const [questions, setQuestions] = useState<QuizQuestionDB[]>([]);
   const [lesson, setLesson] = useState<LessonDB | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,10 +38,14 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
   useEffect(() => {
     let active = true;
     (async () => {
+      if (!resolvedLessonId) {
+        setLoading(false);
+        return;
+      }
       try {
         const [qs, l] = await Promise.all([
-          fetchQuizQuestions(lessonId),
-          fetchLesson(lessonId),
+          fetchQuizQuestions(resolvedLessonId),
+          fetchLesson(resolvedLessonId),
         ]);
         if (active) {
           setQuestions(qs);
@@ -53,7 +58,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
       }
     })();
     return () => { active = false; };
-  }, [lessonId]);
+  }, [resolvedLessonId]);
 
   const checkAnswer = (q: QuizQuestionDB, answer: string): boolean => {
     if (q.type === 'mc') {
@@ -88,7 +93,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
         return acc + (ans && checkAnswer(q, ans) ? 1 : 0);
       }, 0);
       try {
-        await recordQuizScore(getDeviceId(), lessonId, score, questions.length, answers);
+        await recordQuizScore(getDeviceId(), resolvedLessonId, score, questions.length, answers);
       } catch {
         // silent
       }
@@ -116,7 +121,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
         <button
-          onClick={() => navigate({ name: 'lesson', id: lessonId })}
+          onClick={() => navigate({ name: 'lesson', id: resolvedLessonId })}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 hover:text-primary-700 transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -128,7 +133,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
           </div>
           <h3 className="text-lg font-bold text-ink-700 mb-1">{dict.quiz.noQuestions}</h3>
           <p className="text-sm text-ink-500 mb-5">{dict.quiz.noQuestionsHint}</p>
-          <Button variant="outline" onClick={() => navigate({ name: 'lesson', id: lessonId })}>
+          <Button variant="outline" onClick={() => navigate({ name: 'lesson', id: resolvedLessonId })}>
             {dict.quiz.backToLesson}
           </Button>
         </div>
@@ -170,7 +175,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
             <Button onClick={handleRetry} leftIcon={<RotateCcw className="w-4 h-4" />}>
               {dict.quiz.retry}
             </Button>
-            <Button variant="outline" onClick={() => navigate({ name: 'lesson', id: lessonId })}>
+            <Button variant="outline" onClick={() => navigate({ name: 'lesson', id: resolvedLessonId })}>
               {dict.quiz.backToLesson}
             </Button>
           </div>
@@ -241,7 +246,7 @@ export function QuizPage({ lessonId, navigate }: QuizPageProps) {
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       {/* Back */}
       <button
-        onClick={() => navigate({ name: 'lesson', id: lessonId })}
+        onClick={() => navigate({ name: 'lesson', id: resolvedLessonId })}
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 hover:text-primary-700 transition-colors mb-6"
       >
         <ArrowLeft className="w-4 h-4" />

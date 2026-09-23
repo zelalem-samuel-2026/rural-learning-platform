@@ -1,4 +1,4 @@
-import { Home, ChartNoAxesCombined, Settings } from 'lucide-react';
+import { Home, ChartNoAxesCombined, FileText } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
@@ -16,8 +16,8 @@ export function BottomNav({ route, currentRoute, navigate }: BottomNavProps) {
 
   const items: { icon: typeof Home; label: string; route: Route }[] = [
     { icon: Home, label: dict.nav.home, route: { name: 'home' } },
+    { icon: FileText, label: lang === 'am' ? 'የሙከራ ፈተናዎች' : 'Practice Exams', route: { name: 'practice-exams' } },
     { icon: ChartNoAxesCombined, label: dict.nav.dashboard, route: { name: 'dashboard' } },
-    { icon: Settings, label: dict.nav.admin, route: { name: 'admin' } },
   ];
 
   const isActive = (r: Route) => r.name === activeRoute?.name;

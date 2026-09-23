@@ -6,7 +6,7 @@ import {
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import {
-  tr, fetchLesson, fetchLessons, fetchProgress, upsertProgress,
+  tr, fetchLesson, fetchLessons, fetchLessonsByChapter, fetchProgress, upsertProgress,
   fetchSavedLessons, toggleSavedLesson, getDeviceId, formatDuration, difficultyColor,
 } from '@/lib/helpers';
 import type { Route, LessonDB, LessonContentSection } from '@/lib/types';
@@ -53,7 +53,9 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
           setPercent(prog.percent);
         }
         // Find next lesson in same subject+grade
-        const allLessons = await fetchLessons(l.grade_id, l.subject_id);
+        const allLessons = l.chapter_id
+          ? await fetchLessonsByChapter(l.chapter_id)
+          : await fetchLessons(l.grade_id, l.subject_id);
         const idx = allLessons.findIndex((x) => x.id === lessonId);
         setNextLesson(allLessons[idx + 1] ?? null);
 

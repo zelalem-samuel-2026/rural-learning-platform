@@ -70,7 +70,7 @@ export async function fetchLessons(gradeId: string, subjectId: string): Promise<
     .from('lessons').select('*')
     .eq('grade_id', gradeId).eq('subject_id', subjectId)
     .eq('status', 'published')
-    .order('order');
+    .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
 }
@@ -80,7 +80,7 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
     .from('lessons').select('*')
     .eq('chapter_id', chapterId)
     .eq('status', 'published')
-    .order('order');
+    .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
 }

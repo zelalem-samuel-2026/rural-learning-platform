@@ -15,7 +15,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Modal } from '@/components/ui/Modal';
 import {
   fetchLesson, createLessonAdmin, updateLessonAdmin, deleteLessonAdmin,
-  fetchGrades, fetchSubjectsForGrade, fetchChapters,
+  fetchGrades, fetchSubjects, fetchChapters,
   fetchQuizQuestions, createQuizQuestionAdmin, updateQuizQuestionAdmin, deleteQuizQuestionAdmin,
   tr,
 } from '@/lib/helpers';
@@ -97,9 +97,23 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
 
   // Load subjects when grade changes
   useEffect(() => {
-    if (lesson.grade_id) {
-      fetchSubjectsForGrade(lesson.grade_id).then(setSubjects).catch(() => setSubjects([]));
+    if (!lesson.grade_id) {
+      setSubjects([]);
+      return;
     }
+    fetchSubjects().then((allSubjects) => {
+      const isUpperGrade = lesson.grade_id === 'grade-7' || lesson.grade_id === 'grade-8';
+      const availableSubjects = allSubjects.filter((subject) => {
+        if (isUpperGrade) return true;
+        const subjectKey = `${subject.id} ${subject.name.en} ${subject.name.am}`.toLowerCase();
+        return !subjectKey.includes('social') && !subjectKey.includes('ማህበራዊ')
+          && !subjectKey.includes('citizen') && !subjectKey.includes('ዜግነት');
+      });
+      setSubjects(availableSubjects);
+      setLesson((prev) => availableSubjects.some((subject) => subject.id === prev.subject_id)
+        ? prev
+        : { ...prev, subject_id: '', chapter_id: null });
+    }).catch(() => setSubjects([]));
   }, [lesson.grade_id]);
 
   // Load chapters when grade+subject changes

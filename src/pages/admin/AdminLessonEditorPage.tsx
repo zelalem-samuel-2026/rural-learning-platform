@@ -47,7 +47,7 @@ const emptyLesson: Partial<LessonDB> = {
 export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLessonEditorPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
-  const editableLessonId = lessonId && lessonId !== 'new' ? lessonId : undefined;
+  const editableLessonId = lessonId && lessonId !== 'new' && lessonId !== 'undefined' ? lessonId : undefined;
   const isNew = !editableLessonId;
   const [tab, setTab] = useState<Tab>('basic');
   const [loading, setLoading] = useState(true);

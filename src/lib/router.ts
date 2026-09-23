@@ -13,7 +13,7 @@ export type Route =
   | { name: 'practice-exam'; id: string }
   | { name: 'admin' }
   | { name: 'admin-lessons' }
-  | { name: 'admin-lesson-edit'; id: string }
+  | { name: 'admin-lesson-edit'; id?: string }
   | { name: 'admin-chapters' }
   | { name: 'admin-subjects' }
   | { name: 'admin-mock-exams' }
@@ -65,7 +65,7 @@ export function getHash(route: Route): string {
     case 'practice-exam': return `#/mock-exam/${route.id}`;
     case 'admin': return '#/admin';
     case 'admin-lessons': return '#/admin/lessons';
-    case 'admin-lesson-edit': return `#/admin/lesson-edit/${route.id}`;
+    case 'admin-lesson-edit': return route.id ? `#/admin/lesson-edit/${route.id}` : '#/admin/lesson-edit';
     case 'admin-chapters': return '#/admin/chapters';
     case 'admin-subjects': return '#/admin/subjects';
     case 'admin-mock-exams': return '#/admin/mock-exams';

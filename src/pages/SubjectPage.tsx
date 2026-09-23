@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronDown } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import { tr, fetchChapters, fetchLessonsByChapter, fetchSubjectsForGrade } from '@/lib/helpers';
@@ -21,6 +21,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
   const [lessonsByChapter, setLessonsByChapter] = useState<Record<string, LessonDB[]>>({});
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -78,33 +79,50 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
             {chapters.length} ዩኒቶች (Chapters)
           </p>
           {chapters.map((chapter) => {
+            const isExpanded = expandedChapters.has(chapter.id);
             return (
               <div
                 key={chapter.id}
-                className="card-surface w-full text-left p-5 group flex items-center gap-4 relative rounded-2xl border border-ink-100 bg-white shadow-soft"
+                className="card-surface rounded-2xl border border-ink-100 bg-white shadow-soft overflow-hidden"
               >
-                {/* Chapter order number */}
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg bg-primary-50 text-primary-600">
-                  {chapter.order}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setExpandedChapters((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(chapter.id)) next.delete(chapter.id);
+                    else next.add(chapter.id);
+                    return next;
+                  })}
+                  aria-expanded={isExpanded}
+                  className="w-full text-left p-5 group flex items-center gap-4"
+                >
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-bold text-lg bg-primary-50 text-primary-600">
+                    {chapter.order}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-ink-900 group-hover:text-primary-700 transition-colors leading-snug text-lg">
-                    {tr({ en: chapter.title_en, am: chapter.title_am }, lang)}
-                  </h3>
-                  <p className="text-sm text-ink-500 mt-1 line-clamp-2">
-                    {tr({ en: chapter.description_en, am: chapter.description_am }, lang)}
-                  </p>
-                  {lessonsByChapter[chapter.id]?.map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      onClick={() => navigate({ name: 'lesson', id: lesson.id })}
-                      className="block w-full text-left mt-2 text-sm text-primary-700 hover:text-primary-900"
-                    >
-                      {lesson.order}. {tr({ en: lesson.title_en, am: lesson.title_am }, lang)}
-                    </button>
-                  ))}
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-ink-900 group-hover:text-primary-700 transition-colors leading-snug text-lg">
+                      {tr({ en: chapter.title_en, am: chapter.title_am }, lang)}
+                    </h3>
+                    <p className="text-sm text-ink-500 mt-1 line-clamp-2">
+                      {tr({ en: chapter.description_en, am: chapter.description_am }, lang)}
+                    </p>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 shrink-0 text-ink-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                </button>
+                {isExpanded && (
+                  <div className="px-5 pb-5 pl-16 space-y-2">
+                    {lessonsByChapter[chapter.id]?.map((lesson) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => navigate({ name: 'lesson', id: lesson.id })}
+                        className="block w-full text-left rounded-lg px-3 py-2 text-sm text-primary-700 hover:bg-primary-50 transition-colors"
+                      >
+                        {lesson.order}. {tr({ en: lesson.title_en, am: lesson.title_am }, lang)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

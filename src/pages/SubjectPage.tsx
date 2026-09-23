@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
-import { tr, fetchChapters, fetchSubjectsForGrade } from '@/lib/helpers';
-import type { Chapter, Route, Subject } from '@/lib/types';
+import { tr, fetchChapters, fetchLessonsByChapter, fetchSubjectsForGrade } from '@/lib/helpers';
+import type { Chapter, LessonDB, Route, Subject } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { SubjectIcon } from '@/components/SubjectIcon';
 import { Spinner } from '@/components/ui/Spinner';
@@ -18,6 +18,7 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
   const { lang } = useStore();
   const dict = t(lang);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [lessonsByChapter, setLessonsByChapter] = useState<Record<string, LessonDB[]>>({});
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,9 +30,13 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
           fetchSubjectsForGrade(gradeId),
           fetchChapters(gradeId, subjectId),
         ]);
+        const lessonLists = await Promise.all(
+          chapterList.map(async (chapter) => [chapter.id, await fetchLessonsByChapter(chapter.id)] as const),
+        );
         if (active) {
           setSubject(subs.find((s) => s.id === subjectId) ?? null);
           setChapters(chapterList);
+          setLessonsByChapter(Object.fromEntries(lessonLists));
         }
       } catch (err) {
         console.error(err);
@@ -90,6 +95,15 @@ export function SubjectPage({ gradeId, subjectId, navigate }: SubjectPageProps) 
                   <p className="text-sm text-ink-500 mt-1 line-clamp-2">
                     {tr({ en: chapter.description_en, am: chapter.description_am }, lang)}
                   </p>
+                  {lessonsByChapter[chapter.id]?.map((lesson) => (
+                    <button
+                      key={lesson.id}
+                      onClick={() => navigate({ name: 'lesson', id: lesson.id })}
+                      className="block w-full text-left mt-2 text-sm text-primary-700 hover:text-primary-900"
+                    >
+                      {lesson.order}. {tr({ en: lesson.title_en, am: lesson.title_am }, lang)}
+                    </button>
+                  ))}
                 </div>
               </div>
             );

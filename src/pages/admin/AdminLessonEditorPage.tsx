@@ -115,10 +115,10 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
     setLesson((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = async (status: 'draft' | 'published') => {
+  const handleSave = async (status: 'draft' | 'published'): Promise<string | undefined> => {
     if (!lesson.grade_id || !lesson.subject_id || !lesson.title_en) {
       showToast(dict.admin.error + ' — grade, subject, title required', 'error');
-      return;
+      return undefined;
     }
     setSaving(true);
     try {
@@ -139,8 +139,10 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
       } else if (status === 'published') {
         navigate({ name: 'admin-lessons' });
       }
+      return savedId;
     } catch (e: any) {
       showToast(e?.message ?? dict.admin.error, 'error');
+      return undefined;
     } finally {
       setSaving(false);
     }
@@ -202,13 +204,11 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
 
   // --- Quiz helpers ---
   const addQuestion = async () => {
-    if (!currentId) {
-      showToast(dict.admin.saveLessonFirst, 'error');
-      return;
-    }
     try {
+      const lessonId = currentId ?? await handleSave('draft');
+      if (!lessonId) return;
       const newQ: Partial<QuizQuestionDB> = {
-        lesson_id: currentId, order: questions.length + 1, type: 'mc',
+        lesson_id: lessonId, order: questions.length + 1, type: 'mc',
         question_en: '', question_am: '', options_en: ['', '', '', ''], options_am: ['', '', '', ''],
         correct_option_index: 0, accepted_short_answers: [], explanation_en: '', explanation_am: '',
       };
@@ -485,13 +485,8 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-ink-500">{questions.length} {dict.admin.quizSection.toLowerCase()}</p>
-            <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={addQuestion} disabled={!currentId}>{dict.admin.addQuestion}</Button>
+            <Button size="sm" leftIcon={<Plus className="w-4 h-4" />} onClick={addQuestion} disabled={saving}>{dict.admin.addQuestion}</Button>
           </div>
-          {!currentId && (
-            <Card className="p-4 bg-accent-50 border-accent-200">
-              <p className="text-sm text-accent-700">{dict.admin.saveLessonFirst}</p>
-            </Card>
-          )}
           {questions.length === 0 && currentId ? (
             <Card className="p-8 text-center">
               <ClipboardList className="w-8 h-8 text-ink-300 mx-auto mb-2" />

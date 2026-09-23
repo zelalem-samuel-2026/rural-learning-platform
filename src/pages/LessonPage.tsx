@@ -18,7 +18,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useOnlineStatus } from '@/lib/hooks';
 
 interface LessonPageProps {
-  lessonId: string;
+  lessonId?: string;
   navigate: (r: Route) => void;
 }
 
@@ -26,6 +26,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const online = useOnlineStatus();
+  const resolvedLessonId = lessonId || decodeURIComponent(window.location.hash.match(/^#\/lesson\/([^/]+)/)?.[1] ?? '');
   const [lesson, setLesson] = useState<LessonDB | null>(null);
   const [nextLesson, setNextLesson] = useState<LessonDB | null>(null);
   const [status, setStatus] = useState<'not-started' | 'in-progress' | 'completed'>('not-started');
@@ -37,17 +38,21 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   useEffect(() => {
     let active = true;
     (async () => {
+      if (!resolvedLessonId) {
+        setLoading(false);
+        return;
+      }
       try {
         const deviceId = getDeviceId();
         const [l, savedSet, progMap] = await Promise.all([
-          fetchLesson(lessonId),
+          fetchLesson(resolvedLessonId),
           fetchSavedLessons(deviceId),
           fetchProgress(deviceId),
         ]);
         if (!active || !l) return;
         setLesson(l);
-        setSaved(savedSet.has(lessonId));
-        const prog = progMap[lessonId];
+        setSaved(savedSet.has(resolvedLessonId));
+        const prog = progMap[resolvedLessonId];
         if (prog) {
           setStatus(prog.status as any);
           setPercent(prog.percent);
@@ -56,14 +61,14 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         const allLessons = l.chapter_id
           ? await fetchLessonsByChapter(l.chapter_id)
           : await fetchLessons(l.grade_id, l.subject_id);
-        const idx = allLessons.findIndex((x) => x.id === lessonId);
+        const idx = allLessons.findIndex((x) => x.id === resolvedLessonId);
         setNextLesson(allLessons[idx + 1] ?? null);
 
         // Mark as in-progress on visit
         if (!prog || prog.status === 'not-started') {
           setStatus('in-progress');
           setPercent(5);
-          await upsertProgress(deviceId, lessonId, 'in-progress', 5);
+          await upsertProgress(deviceId, resolvedLessonId, 'in-progress', 5);
         }
       } catch {
         // silent
@@ -72,21 +77,21 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       }
     })();
     return () => { active = false; };
-  }, [lessonId]);
+  }, [resolvedLessonId]);
 
   const handleMarkComplete = async () => {
     if (!lesson) return;
     const deviceId = getDeviceId();
     setStatus('completed');
     setPercent(100);
-    await upsertProgress(deviceId, lessonId, 'completed', 100);
+    await upsertProgress(deviceId, resolvedLessonId, 'completed', 100);
   };
 
   const handleToggleSave = async () => {
     if (!lesson) return;
     const deviceId = getDeviceId();
     try {
-      await toggleSavedLesson(deviceId, lessonId, saved);
+      await toggleSavedLesson(deviceId, resolvedLessonId, saved);
       setSaved(!saved);
     } catch {
       // silent
@@ -100,7 +105,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       const newPct = Math.min(90, Math.round(((idx + 1) / (total + 1)) * 100));
       setPercent(newPct);
       const deviceId = getDeviceId();
-      upsertProgress(deviceId, lessonId, 'in-progress', newPct);
+      upsertProgress(deviceId, resolvedLessonId, 'in-progress', newPct);
     }
   };
 

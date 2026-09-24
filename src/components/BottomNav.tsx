@@ -1,4 +1,4 @@
-import { Home, ChartNoAxesCombined, FileText } from 'lucide-react';
+import { Home, ChartNoAxesCombined, FileText, Info, Users } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
@@ -18,13 +18,15 @@ export function BottomNav({ route, currentRoute, navigate }: BottomNavProps) {
     { icon: Home, label: dict.nav.home, route: { name: 'home' } },
     { icon: FileText, label: lang === 'am' ? 'የሙከራ ፈተናዎች' : 'Practice Exams', route: { name: 'practice-exams' } },
     { icon: ChartNoAxesCombined, label: dict.nav.dashboard, route: { name: 'dashboard' } },
+    { icon: Info, label: 'About Us', route: { name: 'about' } },
+    { icon: Users, label: 'Community', route: { name: 'about', view: 'community' } },
   ];
 
   const isActive = (r: Route) => r.name === activeRoute?.name;
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-ink-100 grid grid-cols-3 pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-ink-100 grid grid-cols-5 pb-[env(safe-area-inset-bottom)]"
       aria-label="Bottom navigation"
     >
       {items.map((item) => {
@@ -39,7 +41,7 @@ export function BottomNav({ route, currentRoute, navigate }: BottomNavProps) {
             aria-current={active ? 'page' : undefined}
           >
             <Icon className={`w-5 h-5 transition-colors ${active ? 'text-primary-600' : 'text-ink-400'}`} strokeWidth={active ? 2.5 : 2} />
-            <span className={`text-[11px] font-medium transition-colors ${active ? 'text-primary-700' : 'text-ink-400'}`}>
+            <span className={`whitespace-nowrap text-[10px] font-medium transition-colors ${active ? 'text-primary-700' : 'text-ink-400'}`}>
               {item.label}
             </span>
           </button>

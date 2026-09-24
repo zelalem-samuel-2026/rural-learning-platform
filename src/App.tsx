@@ -115,7 +115,7 @@ function AppContent() {
       case 'home':
         return <HomePage navigate={navigate} />;
       case 'about':
-        return <AboutModule />;
+        return <AboutModule initialView={route.view} />;
       case 'grade':
         return <GradePage gradeId={route.id} navigate={navigate} />;
       case 'subject':

@@ -8,7 +8,7 @@ interface CommunityPageProps {
 
 export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
   // Safe fallback for Google Form link
-  const formUrl = aboutContent?.community?.ambassador?.formUrl || "https://docs.google.com/forms";
+  const formUrl = "https://tally.so/r/445LgX";
 
   return (
     <div 

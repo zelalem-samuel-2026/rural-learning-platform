@@ -27,7 +27,7 @@ export const AboutModule: React.FC = () => {
   return (
     <main>
       {currentView === 'hub' && (
-        <AboutPage />
+        <AboutPage onNavigate={handleNavigate} />
       )}
 
       {currentView === 'our-story' && (

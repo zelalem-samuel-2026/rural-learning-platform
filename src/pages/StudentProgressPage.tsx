@@ -17,15 +17,30 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // ገጹ እንደተከፈተ ያለምንም Login ቅድመ-ሁኔታ ከ localStorage ያመጣል
+    const handleProgressUpdate = () => {
+      fetchProgressData();
+    };
+
     fetchProgressData();
+    window.addEventListener('storage', handleProgressUpdate);
+    window.addEventListener('lerna-progress-updated', handleProgressUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleProgressUpdate);
+      window.removeEventListener('lerna-progress-updated', handleProgressUpdate);
+    };
   }, []);
 
   const fetchProgressData = async () => {
     setLoading(true);
     try {
-      const data = await mockExamService.getUserAttempts();
-      setAttempts(data || []);
+      const storedResults = localStorage.getItem('lerna_progress_data');
+      if (storedResults) {
+        setAttempts(JSON.parse(storedResults));
+      } else {
+        const data = await mockExamService.getUserAttempts();
+        setAttempts(data || []);
+      }
     } catch (err) {
       console.error('Error loading progress stats:', err);
     } finally {
@@ -35,10 +50,22 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
 
   // 📈 ማጠቃለያ ስታቲስቲክስ ስሌቶች (Calculations)
   const completedExamsCount = attempts.length;
-  const totalScoreSum = attempts.reduce((acc, curr) => acc + (curr.score || 0), 0);
+  const totalScoreSum = attempts.reduce(
+    (acc, curr) => acc + (curr.scorePercentage ?? curr.score ?? 0),
+    0
+  );
   const averageScore = completedExamsCount > 0 ? Number((totalScoreSum / completedExamsCount).toFixed(1)) : 0;
-  const highestScore = completedExamsCount > 0 ? Math.max(...attempts.map((a) => a.score || 0)) : 0;
-  const totalCorrectAnswers = attempts.reduce((acc, curr) => acc + (curr.correct_answers || 0), 0);
+  const highestScore = completedExamsCount > 0
+    ? Math.max(...attempts.map((a) => a.scorePercentage ?? a.score ?? 0))
+    : 0;
+  const totalCorrectAnswers = attempts.reduce(
+    (acc, curr) => acc + (curr.correctAnswers ?? curr.correct_answers ?? 0),
+    0
+  );
+  const totalQuestions = attempts.reduce(
+    (acc, curr) => acc + (curr.totalQuestions ?? curr.total_questions ?? 0),
+    0
+  );
 
   if (loading) {
     return (
@@ -124,7 +151,7 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
           </div>
           <div>
             <span className="block text-2xl font-black text-gray-900 dark:text-white">
-              {totalCorrectAnswers}
+              {totalCorrectAnswers} / {totalQuestions}
             </span>
             <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
               ትክክለኛ መልሶች
@@ -243,4 +270,3 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
     </div>
   );
 };
-

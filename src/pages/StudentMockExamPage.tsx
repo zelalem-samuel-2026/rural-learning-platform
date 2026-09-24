@@ -130,6 +130,19 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
       };
 
       setCalculatedResult(resultObj);
+      const progressResult = {
+        scorePercentage,
+        correctAnswers: correctCount,
+        totalQuestions,
+        timestamp: new Date().toISOString(),
+      };
+      const storedResults = localStorage.getItem('lerna_progress_data');
+      const progressResults = storedResults ? JSON.parse(storedResults) : [];
+      localStorage.setItem(
+        'lerna_progress_data',
+        JSON.stringify([...progressResults, progressResult])
+      );
+      window.dispatchEvent(new Event('lerna-progress-updated'));
 
       // Save to Supabase (If user logged in)
       if (user?.id) {

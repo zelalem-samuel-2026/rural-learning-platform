@@ -129,7 +129,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥉</div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#9a3412', margin: '0 0 0.25rem 0' }}>BRONZE LEVEL</h3>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ea580c', marginBottom: '1rem' }}>(10+ Students Reached)</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ea580c', marginBottom: '1rem' }}>(50+ Students Reached)</p>
             <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.6' }}>
               <li>Official Digital Certificate</li>
               <li>Lerna Community Ambassador Badge</li>
@@ -147,7 +147,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥈</div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#334155', margin: '0 0 0.25rem 0' }}>SILVER LEVEL</h3>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '1rem' }}>(25+ Students Reached)</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginBottom: '1rem' }}>(100+ Students Reached)</p>
             <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.6' }}>
               <li>Verified Leadership Certificate</li>
               <li>Featured Spot on Lerna Platform</li>
@@ -165,7 +165,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🥇</div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#854d0e', margin: '0 0 0.25rem 0' }}>GOLD LEVEL</h3>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ca8a04', marginBottom: '1rem' }}>(50+ Students Reached)</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#ca8a04', marginBottom: '1rem' }}>(200+ Students Reached)</p>
             <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.6' }}>
               <li>LinkedIn Badge + Recommendation</li>
               <li>Official Recommendation Letter</li>
@@ -183,7 +183,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👑</div>
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#6b21a8', margin: '0 0 0.25rem 0' }}>PLATINUM LEVEL</h3>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#9333ea', marginBottom: '1rem' }}>(100+ Students Reached)</p>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#9333ea', marginBottom: '1rem' }}>(350+ Students Reached)</p>
             <ul style={{ paddingLeft: '1.2rem', margin: 0, color: '#475569', fontSize: '0.92rem', lineHeight: '1.6' }}>
               <li>Executive Recommendation Letter</li>
               <li>Scholarship Application Assistance</li>

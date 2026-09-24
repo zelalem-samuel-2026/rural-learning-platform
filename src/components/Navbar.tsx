@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GraduationCap, Menu, X, Home, ChartNoAxesCombined, Settings, FileText } from 'lucide-react';
+import { GraduationCap, Menu, X, Home, ChartNoAxesCombined, Settings, FileText, Info } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import type { Route } from '@/lib/types';
@@ -20,6 +20,7 @@ export function Navbar({ route, currentRoute, navigate }: NavbarProps) {
 
   const links: { label: string; route: Route; icon: typeof Home }[] = [
     { label: dict.nav.home, route: { name: 'home' }, icon: Home },
+    { label: 'About Lerna', route: { name: 'about' }, icon: Info },
     { 
       label: lang === 'am' ? 'የሙከራ ፈተናዎች' : 'Practice Exams', 
       route: { name: 'practice-exams' } as Route, 

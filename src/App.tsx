@@ -11,6 +11,7 @@ import { Footer } from '@/components/Footer';
 import { OfflineBanner } from '@/components/OfflineBanner';
 
 import { HomePage } from '@/pages/HomePage';
+import { AboutModule } from '@/pages/about';
 import { GradePage } from '@/pages/GradePage';
 import { SubjectPage } from '@/pages/SubjectPage';
 import { LessonPage } from '@/pages/LessonPage';
@@ -113,6 +114,8 @@ function AppContent() {
     switch (routeName) {
       case 'home':
         return <HomePage navigate={navigate} />;
+      case 'about':
+        return <AboutModule />;
       case 'grade':
         return <GradePage gradeId={route.id} navigate={navigate} />;
       case 'subject':

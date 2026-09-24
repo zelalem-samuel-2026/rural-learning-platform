@@ -106,6 +106,7 @@ export interface SavedLessonDB {
 
 export type Route =
   | { name: 'home' }
+  | { name: 'about' }
   | { name: 'grade'; id: GradeId }
   | { name: 'subject'; gradeId: GradeId; subjectId: SubjectId }
   | { name: 'lesson'; id: string }

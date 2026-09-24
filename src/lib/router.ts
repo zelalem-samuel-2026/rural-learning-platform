@@ -3,6 +3,7 @@ import type { GradeId } from './types';
 
 export type Route =
   | { name: 'home' }
+  | { name: 'about' }
   | { name: 'grade'; id: GradeId }
   | { name: 'subject'; gradeId: GradeId; subjectId: string }
   | { name: 'lesson'; id: string }
@@ -28,6 +29,7 @@ export function parseHash(hash: string): Route {
   const [first, second, third] = parts;
 
   if (first === 'grade' && second) return { name: 'grade', id: second as GradeId };
+  if (first === 'about') return { name: 'about' };
   if (first === 'subject' && second && third) return { name: 'subject', gradeId: second as GradeId, subjectId: third };
   if (first === 'lesson' && second) return { name: 'lesson', id: second };
   if (first === 'quiz' && second) return { name: 'quiz', lessonId: second };
@@ -55,6 +57,7 @@ export function parseHash(hash: string): Route {
 export function getHash(route: Route): string {
   switch (route.name) {
     case 'home': return '#/';
+    case 'about': return '#/about';
     case 'grade': return `#/grade/${route.id}`;
     case 'subject': return `#/subject/${route.gradeId}/${route.subjectId}`;
     case 'lesson': return `#/lesson/${route.id}`;

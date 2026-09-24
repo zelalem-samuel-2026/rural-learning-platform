@@ -87,6 +87,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           href={formUrl}
           target="_blank"
           rel="noopener noreferrer"
+          className={styles.communityCta}
           style={{
             display: 'inline-block',
             padding: '1rem 2.2rem',
@@ -119,7 +120,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           gap: '1.5rem'
         }}>
           {/* BRONZE */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             background: '#ffffff',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -137,7 +138,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           </div>
 
           {/* SILVER */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             background: '#ffffff',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -155,7 +156,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           </div>
 
           {/* GOLD */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             background: '#ffffff',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -173,7 +174,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           </div>
 
           {/* PLATINUM */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -207,7 +208,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           gap: '1.5rem'
         }}>
           {/* TOP 10 */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#f0fdf4',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -226,7 +227,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           </div>
 
           {/* NATIONAL AMBASSADOR */}
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#eff6ff',
             borderRadius: '18px',
             padding: '1.8rem',
@@ -263,7 +264,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
           gap: '1.2rem'
         }}>
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#ffffff',
             borderRadius: '14px',
             padding: '1.5rem 1rem',
@@ -276,7 +277,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
             <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Be #1 at your school</p>
           </div>
 
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#ffffff',
             borderRadius: '14px',
             padding: '1.5rem 1rem',
@@ -289,7 +290,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
             <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Be Top 3 in your city</p>
           </div>
 
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#ffffff',
             borderRadius: '14px',
             padding: '1.5rem 1rem',
@@ -302,7 +303,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
             <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Be Top 5 in your region</p>
           </div>
 
-          <div style={{
+          <div className={styles.communityCard} style={{
             backgroundColor: '#ffffff',
             borderRadius: '14px',
             padding: '1.5rem 1rem',
@@ -337,6 +338,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
           href={formUrl}
           target="_blank"
           rel="noopener noreferrer"
+          className={styles.communityCta}
           style={{
             display: 'inline-block',
             padding: '1.1rem 2.5rem',

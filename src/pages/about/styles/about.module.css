@@ -176,6 +176,20 @@
   box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.06);
 }
 
+.communityCard,
+.communityCta {
+  cursor: pointer;
+  transition: all 0.3s ease !important;
+}
+
+.communityCard:hover,
+.communityCard:active,
+.communityCta:hover,
+.communityCta:active {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px -12px rgba(15, 23, 42, 0.2) !important;
+}
+
 /* Responsive Styling */
 @media (max-width: 768px) {
   .aboutContainer {

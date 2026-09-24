@@ -10,7 +10,7 @@ interface CommunityPageProps {
 }
 
 export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
-  const { title, subtitle, studentVoices, requirements, cta } = aboutContent.community;
+  const { title, studentVoice, ambassador } = aboutContent.community;
 
   return (
     <div className={styles.aboutContainer}>
@@ -34,35 +34,31 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
 
       {/* 1. COMMUNITY & STUDENT VOICES SECTION */}
       <section className={styles.sectionWrapper}>
-        <SectionHeader title={title} subtitle={subtitle} />
+        <SectionHeader title={title} subtitle={studentVoice} />
         
-        {studentVoices && studentVoices.length > 0 && (
-          <div 
-            style={{ 
-              display: 'grid', 
-              gap: '1.5rem', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-              marginTop: '2rem' 
-            }}
-          >
-            {studentVoices.map((voice, idx) => (
-              <StudentVoiceCard key={idx} voice={voice} />
-            ))}
-          </div>
-        )}
+        <div
+          style={{
+            display: 'grid',
+            gap: '1.5rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            marginTop: '2rem' 
+          }}
+        >
+          <StudentVoiceCard voice={studentVoice} />
+        </div>
       </section>
 
       <hr style={{ border: 'none', borderTop: '1px solid var(--about-border)', margin: '3rem 0' }} />
 
       {/* 2. AMBASSADOR REQUIREMENTS */}
       <section className={styles.sectionWrapper}>
-        <AmbassadorRequirements requirements={requirements} />
+        <AmbassadorRequirements requirements={ambassador.roles} />
       </section>
 
       {/* 3. PRIMARY CTA BUTTON (GOOGLE FORM) */}
       <section className={styles.sectionWrapper} style={{ textAlign: 'center', marginTop: '3rem' }}>
         <a
-          href={cta.link || "https://docs.google.com/forms"}
+          href={ambassador.formUrl || "https://docs.google.com/forms"}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.pillItem}
@@ -79,7 +75,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
             transition: 'transform 0.2s ease, box-shadow 0.2s ease'
           }}
         >
-          {cta.label || "Become a Lerna Ambassador 🚀"}
+          {ambassador.title}
         </a>
       </section>
     </div>

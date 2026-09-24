@@ -41,7 +41,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ onBack }) => {
             display: 'grid',
             gap: '1.5rem',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            marginTop: '2rem' 
+            marginTop: '2rem'
           }}
         >
           <StudentVoiceCard voice={studentVoice} />

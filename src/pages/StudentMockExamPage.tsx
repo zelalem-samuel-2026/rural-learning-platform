@@ -130,11 +130,15 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
       };
 
       setCalculatedResult(resultObj);
+      const completedAt = new Date().toISOString();
       const progressResult = {
+        title: exam.title_am || exam.title_en,
         scorePercentage,
         correctAnswers: correctCount,
         totalQuestions,
-        timestamp: new Date().toISOString(),
+        timeSpent: formatTime(timeSpentSeconds),
+        date: completedAt,
+        timestamp: completedAt,
       };
       const storedResults = localStorage.getItem('lerna_progress_data');
       const progressResults = storedResults ? JSON.parse(storedResults) : [];

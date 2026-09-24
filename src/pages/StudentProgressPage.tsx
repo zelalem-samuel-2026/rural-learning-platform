@@ -207,16 +207,15 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60 text-sm">
                 {attempts.map((att) => {
-                  const examTitle = att.practice_exams?.title_am || att.practice_exams?.title_en || 'የሙከራ ፈተና';
-                  const score = att.score || 0;
-                  const formattedDate = new Date(att.created_at).toLocaleDateString('am-ET', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  });
+                  const examTitle = att.title || att.examTitle || att.practice_exams?.title_am || att.practice_exams?.title_en || 'የሙከራ ፈተና';
+                  const score = att.scorePercentage ?? att.score ?? 0;
+                  const parsedDate = new Date(att.date || att.created_at);
+                  const formattedDate = Number.isNaN(parsedDate.getTime())
+                    ? '-'
+                    : parsedDate.toLocaleDateString();
 
-                  const mins = Math.floor((att.time_spent_seconds || 0) / 60);
-                  const secs = (att.time_spent_seconds || 0) % 60;
+                  const legacyTime = `${Math.floor((att.time_spent_seconds || 0) / 60)} ደቂቃ ${(att.time_spent_seconds || 0) % 60} ሰከንድ`;
+                  const timeSpent = att.timeSpent || (att.time_spent_seconds != null ? legacyTime : '-');
 
                   return (
                     <tr key={att.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
@@ -237,12 +236,12 @@ export const StudentProgressPage: React.FC<StudentProgressPageProps> = ({ naviga
                         </span>
                       </td>
                       <td className="py-4 px-4 font-semibold text-gray-700 dark:text-gray-300">
-                        {att.correct_answers} / {att.total_questions}
+                        {att.correctAnswers ?? att.correct_answers ?? 0} / {att.totalQuestions ?? att.total_questions ?? 0}
                       </td>
                       <td className="py-4 px-4 text-xs font-medium text-gray-500">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-gray-400" />
-                          <span>{mins} ደቂቃ {secs} ሰከንድ</span>
+                          <span>{timeSpent}</span>
                         </div>
                       </td>
                       <td className="py-4 px-4 text-xs text-gray-500">

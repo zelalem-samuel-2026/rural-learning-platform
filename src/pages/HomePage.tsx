@@ -80,10 +80,10 @@ export function HomePage({ navigate }: HomePageProps) {
   return (
     <div className="animate-fade-in">
       {/* Hero Section — Fullscreen Background Carousel */}
-      <section className="relative overflow-hidden min-h-[75vh] sm:min-h-[620px] flex items-center justify-center bg-ink-900">
+      <section className="relative overflow-hidden min-h-[75vh] sm:min-h-[620px] sm:h-[620px] flex items-center justify-center bg-ink-900">
         
         {/* Absolute Background Image Carousel */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 min-h-[75vh] sm:min-h-[620px] sm:h-[620px]">
           {heroImages.map((src, index) => (
             <img
               key={src}

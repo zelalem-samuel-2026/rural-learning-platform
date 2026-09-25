@@ -32,7 +32,7 @@ export function formatDuration(min: number, lang: Lang): string {
 // --- Student-facing reads (published only) ---
 
 export async function fetchGrades(): Promise<Grade[]> {
-  const { data, error } = await supabase.from('grades').select('*').eq('is_approved', true).order('number');
+  const { data, error } = await supabase.from('grades').select('*').or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false').order('number');
   if (error) throw error;
   return (data ?? []).map((r: any) => ({
     id: r.id, name: { en: r.name_en, am: r.name_am }, number: r.number, is_approved: r.is_approved,
@@ -40,7 +40,7 @@ export async function fetchGrades(): Promise<Grade[]> {
 }
 
 export async function fetchSubjects(): Promise<Subject[]> {
-  const { data, error } = await supabase.from('subjects').select('*').eq('is_approved', true);
+  const { data, error } = await supabase.from('subjects').select('*').or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false');
   if (error) throw error;
   return (data ?? []).map(parseSubjectRow);
 }
@@ -52,14 +52,15 @@ export async function fetchSubjectsForGrade(gradeId: string): Promise<Subject[]>
     .eq('grade_id', gradeId);
   if (error) throw error;
   return (data ?? [])
-    .map((mapping: any) => mapping.subjects?.is_approved === true ? parseSubjectRow(mapping.subjects) : null)
+    .map((mapping: any) => mapping.subjects ? parseSubjectRow(mapping.subjects) : null)
     .filter((subject): subject is Subject => subject !== null);
 }
 
 export async function fetchChapters(gradeId: string, subjectId: string): Promise<Chapter[]> {
   const { data, error } = await supabase
     .from('chapters').select('*')
-    .eq('grade_id', gradeId).eq('subject_id', subjectId).eq('is_approved', true)
+    .eq('grade_id', gradeId).eq('subject_id', subjectId)
+    .or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false')
     .order('order');
   if (error) throw error;
   return (data ?? []).map(parseChapterRow);
@@ -69,7 +70,8 @@ export async function fetchLessons(gradeId: string, subjectId: string): Promise<
   const { data, error } = await supabase
     .from('lessons').select('*')
     .eq('grade_id', gradeId).eq('subject_id', subjectId)
-    .eq('status', 'published').eq('is_approved', true)
+    .eq('status', 'published')
+    .or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false')
     .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
@@ -79,7 +81,8 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
   const { data, error } = await supabase
     .from('lessons').select('*')
     .eq('chapter_id', chapterId)
-    .eq('status', 'published').eq('is_approved', true)
+    .eq('status', 'published')
+    .or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false')
     .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
@@ -87,7 +90,7 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
 
 export async function fetchLesson(id: string): Promise<LessonDB | null> {
   if (id === 'new') throw new Error('Invalid lesson ID');
-  const { data, error } = await supabase.from('lessons').select('*').eq('id', id).eq('status', 'published').eq('is_approved', true).maybeSingle();
+  const { data, error } = await supabase.from('lessons').select('*').eq('id', id).eq('status', 'published').or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false').maybeSingle();
   if (error) throw error;
   if (!data) return null;
   return parseLessonRow(data);
@@ -97,7 +100,7 @@ export async function fetchQuizQuestions(lessonId: string): Promise<QuizQuestion
   if (lessonId === 'new') throw new Error('Invalid lesson ID');
   const { data, error } = await supabase
     .from('quiz_questions').select('*')
-    .eq('lesson_id', lessonId).eq('is_approved', true).order('order');
+    .eq('lesson_id', lessonId).or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false').order('order');
   if (error) throw error;
   return (data ?? []).map(parseQuizRow);
 }

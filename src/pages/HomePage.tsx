@@ -385,7 +385,7 @@ export function HomePage({ navigate }: HomePageProps) {
                 <div className="absolute inset-0 bg-primary-400 rounded-full blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-500 animate-pulse"></div>
                 <Button
                   size="lg"
-                  className="relative bg-white text-primary-700 hover:bg-primary-50 px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
+                  className="relative bg-primary-600 text-white hover:bg-primary-700 px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   rightIcon={<ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform" />}
                 >

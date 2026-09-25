@@ -386,7 +386,7 @@ export function HomePage({ navigate }: HomePageProps) {
                 <Button
                   size="lg"
                   className="relative bg-white text-primary-700 hover:bg-primary-50 px-8 py-6 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 font-bold"
-                  onClick={() => navigate({ name: 'home' })}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   rightIcon={<ArrowRight className="w-6 h-6 group-hover:translate-x-1.5 transition-transform" />}
                 >
                   {dict.home.ctaButton}

@@ -80,16 +80,16 @@ export function HomePage({ navigate }: HomePageProps) {
   return (
     <div className="animate-fade-in">
       {/* Hero Section — Fullscreen Background Carousel */}
-      <section className="relative overflow-hidden min-h-[75vh] sm:min-h-[620px] sm:h-[620px] flex items-center justify-center bg-ink-900">
+      <section className="relative overflow-hidden min-h-[80vh] sm:min-h-[620px] sm:h-[620px] flex items-center justify-center bg-ink-900">
         
         {/* Absolute Background Image Carousel */}
-        <div className="absolute inset-0 z-0 min-h-[75vh] sm:min-h-[620px] sm:h-[620px]">
+        <div className="absolute inset-0 z-0 min-h-[80vh] sm:min-h-[620px] sm:h-[620px]">
           {heroImages.map((src, index) => (
             <img
               key={src}
               src={src}
               alt={`${dict.home.heroTitle} - Background Slide ${index + 1}`}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              className={`absolute inset-0 w-full h-full object-cover bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
                 index === currentSlide ? 'opacity-100' : 'opacity-0'
               }`}
               loading={index === 0 ? "eager" : "lazy"}

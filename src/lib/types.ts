@@ -12,6 +12,7 @@ export interface Grade {
   id: GradeId;
   name: Bilingual;
   number: number;
+  is_approved?: boolean;
 }
 
 export interface Subject {
@@ -20,6 +21,7 @@ export interface Subject {
   icon: string;
   color: string;
   description: Bilingual;
+  is_approved?: boolean;
 }
 
 export interface Chapter {
@@ -31,6 +33,7 @@ export interface Chapter {
   title_am: string;
   description_en: string;
   description_am: string;
+  is_approved?: boolean;
 }
 
 export interface LessonContentSection {
@@ -76,6 +79,7 @@ export interface LessonDB {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   status: 'draft' | 'published';
   updated_at?: string;
+  is_approved?: boolean;
 }
 
 export interface StudentProgressDB {

@@ -24,6 +24,7 @@ interface AdminLessonEditorPageProps {
   route: Route;
   navigate: (r: Route) => void;
   lessonId?: string;
+  userRole?: string | null;
 }
 
 type Tab = 'basic' | 'content' | 'quiz';
@@ -44,7 +45,7 @@ const emptyLesson: Partial<LessonDB> = {
   status: 'draft',
 };
 
-export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLessonEditorPageProps) {
+export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: AdminLessonEditorPageProps) {
   const { lang } = useStore();
   const dict = t(lang);
   const editableLessonId = lessonId && lessonId !== 'new' && lessonId !== 'undefined' ? lessonId : undefined;
@@ -136,9 +137,13 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
     }
     setSaving(true);
     try {
-      const payload = { ...lesson, status };
+      const payload = { ...lesson, status, is_approved: userRole === 'admin' ? lesson.is_approved : false };
       let savedId = currentId;
       if (currentId) {
+        if (userRole !== 'admin') {
+          showToast('Teachers cannot edit existing lessons', 'error');
+          return undefined;
+        }
         await updateLessonAdmin(currentId, payload);
       } else {
         const createdLesson = await createLessonAdmin(payload);
@@ -163,7 +168,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
   };
 
   const handleDelete = async () => {
-    if (!currentId) return;
+    if (!currentId || userRole !== 'admin') return;
     try {
       await deleteLessonAdmin(currentId);
       navigate({ name: 'admin-lessons' });
@@ -255,6 +260,10 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
   };
 
   const saveQuestion = async (idx: number) => {
+    if (userRole !== 'admin') {
+      showToast('Teachers cannot edit existing questions', 'error');
+      return;
+    }
     const errs = validateQuestion(questions[idx]);
     if (errs.length > 0) {
       setQuestionErrors((prev) => ({ ...prev, [idx]: errs }));
@@ -274,6 +283,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
   };
 
   const deleteQuestion = async (idx: number) => {
+    if (userRole !== 'admin') return;
     try {
       await deleteQuizQuestionAdmin(questions[idx].id);
       setQuestions((prev) => prev.filter((_, i) => i !== idx));
@@ -285,6 +295,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
   };
 
   const moveQuestion = (idx: number, dir: -1 | 1) => {
+    if (userRole !== 'admin') return;
     const newIdx = idx + dir;
     if (newIdx < 0 || newIdx >= questions.length) return;
     const arr = [...questions];
@@ -516,11 +527,11 @@ export function AdminLessonEditorPage({ route, navigate, lessonId }: AdminLesson
                 dict={dict}
                 errors={questionErrors[idx]}
                 saving={savingQuestions.has(idx)}
-                onChange={(patch) => updateQuestion(idx, patch)}
-                onSave={() => saveQuestion(idx)}
-                onDelete={() => deleteQuestion(idx)}
-                onUp={() => moveQuestion(idx, -1)}
-                onDown={() => moveQuestion(idx, 1)}
+                onChange={userRole === 'admin' ? (patch) => updateQuestion(idx, patch) : () => undefined}
+                onSave={userRole === 'admin' ? () => saveQuestion(idx) : () => undefined}
+                onDelete={userRole === 'admin' ? () => deleteQuestion(idx) : () => undefined}
+                onUp={userRole === 'admin' ? () => moveQuestion(idx, -1) : () => undefined}
+                onDown={userRole === 'admin' ? () => moveQuestion(idx, 1) : () => undefined}
               />
             ))
           )}

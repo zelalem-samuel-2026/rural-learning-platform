@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import {
   fetchAllChaptersAdmin, createChapterAdmin, updateChapterAdmin, deleteChapterAdmin,
   fetchGrades, fetchSubjects, fetchLessonsAdmin, tr,
+  setChapterApprovalAdmin,
 } from '@/lib/helpers';
 
 // 1. userRole እዚህ ተጨምሯል
@@ -117,6 +118,16 @@ export function AdminChaptersPage({ route, navigate, userRole }: AdminChaptersPa
     }
   };
 
+  const handleApproval = async (chapter: ChapterWithLessons) => {
+    try {
+      await setChapterApprovalAdmin(chapter.id, chapter.is_approved !== true);
+      showToast(dict.admin.saved);
+      load();
+    } catch {
+      showToast(dict.admin.error);
+    }
+  };
+
   const moveChapter = async (ch: ChapterWithLessons, dir: -1 | 1) => {
     const sorted = [...chapters].sort((a, b) => a.order - b.order);
     const idx = sorted.findIndex((c) => c.id === ch.id);
@@ -171,9 +182,10 @@ export function AdminChaptersPage({ route, navigate, userRole }: AdminChaptersPa
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => moveChapter(ch, -1)} disabled={idx === 0} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveUp}><ChevronUp className="w-4 h-4" /></button>
-                  <button onClick={() => moveChapter(ch, 1)} disabled={idx === arr.length - 1} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveDown}><ChevronDown className="w-4 h-4" /></button>
-                  <button onClick={() => openEdit(ch)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>
+                  {userRole === 'admin' && <button onClick={() => moveChapter(ch, -1)} disabled={idx === 0} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveUp}><ChevronUp className="w-4 h-4" /></button>}
+                  {userRole === 'admin' && <button onClick={() => moveChapter(ch, 1)} disabled={idx === arr.length - 1} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 disabled:opacity-30" aria-label={dict.admin.moveDown}><ChevronDown className="w-4 h-4" /></button>}
+                  {userRole === 'admin' && <button onClick={() => openEdit(ch)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>}
+                  {userRole === 'admin' && <button onClick={() => handleApproval(ch)} className="p-2 rounded-lg hover:bg-success-50 text-ink-500 hover:text-success-600" aria-label={ch.is_approved ? 'Disapprove' : 'Approve'}><BookOpen className="w-4 h-4" /></button>}
                   
                   {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
                   {userRole === 'admin' && (

@@ -15,6 +15,7 @@ import { SubjectIcon } from '@/components/SubjectIcon';
 import {
   fetchSubjects, fetchGrades, createSubjectAdmin, updateSubjectAdmin, deleteSubjectAdmin,
   fetchGradeSubjectMappings, tr,
+  setSubjectApprovalAdmin,
 } from '@/lib/helpers';
 import { supabase } from '@/lib/supabase';
 
@@ -124,6 +125,16 @@ export function AdminSubjectsPage({ route, navigate, userRole }: AdminSubjectsPa
     }
   };
 
+  const handleApproval = async (subject: Subject) => {
+    try {
+      await setSubjectApprovalAdmin(subject.id, subject.is_approved !== true);
+      showToast(dict.admin.saved);
+      load();
+    } catch {
+      showToast(dict.admin.error);
+    }
+  };
+
   const toggleGrade = (gid: string) => {
     if (!editing) return;
     const gids = editing.gradeIds.includes(gid) ? editing.gradeIds.filter((g) => g !== gid) : [...editing.gradeIds, gid];
@@ -151,7 +162,8 @@ export function AdminSubjectsPage({ route, navigate, userRole }: AdminSubjectsPa
                   <SubjectIcon name={s.icon} className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex items-center gap-1">
-                  <button onClick={() => openEdit(s)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>
+                  {userRole === 'admin' && <button onClick={() => openEdit(s)} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600" aria-label={dict.admin.edit}><Edit3 className="w-4 h-4" /></button>}
+                  {userRole === 'admin' && <button onClick={() => handleApproval(s)} className="p-2 rounded-lg hover:bg-success-50 text-ink-500 hover:text-success-600" aria-label={s.is_approved ? 'Disapprove' : 'Approve'}><BookOpen className="w-4 h-4" /></button>}
                   
                   {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
                   {userRole === 'admin' && (

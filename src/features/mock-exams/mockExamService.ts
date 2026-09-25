@@ -9,6 +9,7 @@ export const mockExamService = {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
+      .eq('is_approved', true)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -23,6 +24,7 @@ export const mockExamService = {
       .from('practice_exams')
       .select('*')
       .eq('id', id)
+      .eq('is_approved', true)
       .maybeSingle();
 
     if (error) {
@@ -35,7 +37,7 @@ export const mockExamService = {
   async createExam(examData: Omit<PracticeExam, 'id' | 'created_at'>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
-      .insert([examData])
+      .insert([{ ...examData, is_approved: false }])
       .select()
       .single();
 
@@ -93,7 +95,7 @@ export const mockExamService = {
   async createQuestion(questionData: Omit<PracticeExamQuestion, 'id' | 'created_at'>): Promise<PracticeExamQuestion> {
     const { data, error } = await supabase
       .from('practice_exam_questions')
-      .insert([questionData])
+      .insert([{ ...questionData, is_approved: false }])
       .select()
       .single();
 

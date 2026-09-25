@@ -32,15 +32,15 @@ export function formatDuration(min: number, lang: Lang): string {
 // --- Student-facing reads (published only) ---
 
 export async function fetchGrades(): Promise<Grade[]> {
-  const { data, error } = await supabase.from('grades').select('*').order('number');
+  const { data, error } = await supabase.from('grades').select('*').eq('is_approved', true).order('number');
   if (error) throw error;
   return (data ?? []).map((r: any) => ({
-    id: r.id, name: { en: r.name_en, am: r.name_am }, number: r.number,
+    id: r.id, name: { en: r.name_en, am: r.name_am }, number: r.number, is_approved: r.is_approved,
   }));
 }
 
 export async function fetchSubjects(): Promise<Subject[]> {
-  const { data, error } = await supabase.from('subjects').select('*');
+  const { data, error } = await supabase.from('subjects').select('*').eq('is_approved', true);
   if (error) throw error;
   return (data ?? []).map(parseSubjectRow);
 }
@@ -52,14 +52,14 @@ export async function fetchSubjectsForGrade(gradeId: string): Promise<Subject[]>
     .eq('grade_id', gradeId);
   if (error) throw error;
   return (data ?? [])
-    .map((mapping: any) => mapping.subjects ? parseSubjectRow(mapping.subjects) : null)
+    .map((mapping: any) => mapping.subjects?.is_approved === true ? parseSubjectRow(mapping.subjects) : null)
     .filter((subject): subject is Subject => subject !== null);
 }
 
 export async function fetchChapters(gradeId: string, subjectId: string): Promise<Chapter[]> {
   const { data, error } = await supabase
     .from('chapters').select('*')
-    .eq('grade_id', gradeId).eq('subject_id', subjectId)
+    .eq('grade_id', gradeId).eq('subject_id', subjectId).eq('is_approved', true)
     .order('order');
   if (error) throw error;
   return (data ?? []).map(parseChapterRow);
@@ -69,7 +69,7 @@ export async function fetchLessons(gradeId: string, subjectId: string): Promise<
   const { data, error } = await supabase
     .from('lessons').select('*')
     .eq('grade_id', gradeId).eq('subject_id', subjectId)
-    .eq('status', 'published')
+    .eq('status', 'published').eq('is_approved', true)
     .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
@@ -79,7 +79,7 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
   const { data, error } = await supabase
     .from('lessons').select('*')
     .eq('chapter_id', chapterId)
-    .eq('status', 'published')
+    .eq('status', 'published').eq('is_approved', true)
     .order('order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(parseLessonRow);
@@ -87,7 +87,7 @@ export async function fetchLessonsByChapter(chapterId: string): Promise<LessonDB
 
 export async function fetchLesson(id: string): Promise<LessonDB | null> {
   if (id === 'new') throw new Error('Invalid lesson ID');
-  const { data, error } = await supabase.from('lessons').select('*').eq('id', id).maybeSingle();
+  const { data, error } = await supabase.from('lessons').select('*').eq('id', id).eq('status', 'published').eq('is_approved', true).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   return parseLessonRow(data);
@@ -97,7 +97,7 @@ export async function fetchQuizQuestions(lessonId: string): Promise<QuizQuestion
   if (lessonId === 'new') throw new Error('Invalid lesson ID');
   const { data, error } = await supabase
     .from('quiz_questions').select('*')
-    .eq('lesson_id', lessonId).order('order');
+    .eq('lesson_id', lessonId).eq('is_approved', true).order('order');
   if (error) throw error;
   return (data ?? []).map(parseQuizRow);
 }
@@ -194,6 +194,7 @@ export async function createLessonAdmin(lesson: Partial<LessonDB>): Promise<Less
     duration_min: lesson.duration_min ?? 15,
     difficulty: lesson.difficulty ?? 'beginner',
     status: lesson.status ?? 'draft',
+    is_approved: lesson.is_approved ?? false,
     updated_at: new Date().toISOString(),
   }).select('*').single();
   if (error) throw error;
@@ -213,6 +214,11 @@ export async function deleteLessonAdmin(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function setLessonApprovalAdmin(id: string, isApproved: boolean): Promise<void> {
+  const { error } = await supabase.from('lessons').update({ is_approved: isApproved }).eq('id', id);
+  if (error) throw error;
+}
+
 export async function duplicateLessonAdmin(id: string): Promise<string | null> {
   const lesson = await fetchLesson(id);
   if (!lesson) return null;
@@ -223,6 +229,7 @@ export async function duplicateLessonAdmin(id: string): Promise<string | null> {
     title_en: `${lesson.title_en} (Copy)`,
     title_am: `${lesson.title_am} (ቅጂ)`,
     status: 'draft',
+    is_approved: false,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
@@ -260,6 +267,7 @@ export async function createChapterAdmin(chapter: Partial<Chapter>): Promise<str
     title_am: chapter.title_am ?? '',
     description_en: chapter.description_en ?? '',
     description_am: chapter.description_am ?? '',
+    is_approved: false,
   }).select('id').single();
   if (error) throw error;
   if (!data) throw new Error('Chapter insert returned no row — save failed');
@@ -288,6 +296,7 @@ export async function createSubjectAdmin(subject: Partial<Subject> & { gradeIds?
     color: subject.color ?? 'from-primary-400 to-primary-600',
     description_en: subject.description?.en ?? '',
     description_am: subject.description?.am ?? '',
+    is_approved: false,
   });
   if (sErr) throw sErr;
   // Map to grades
@@ -315,6 +324,16 @@ export async function deleteSubjectAdmin(id: string): Promise<void> {
   const { error: dErr } = await supabase.from('grade_subjects').delete().eq('subject_id', id);
   if (dErr) throw dErr;
   const { error } = await supabase.from('subjects').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function setSubjectApprovalAdmin(id: string, isApproved: boolean): Promise<void> {
+  const { error } = await supabase.from('subjects').update({ is_approved: isApproved }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function setChapterApprovalAdmin(id: string, isApproved: boolean): Promise<void> {
+  const { error } = await supabase.from('chapters').update({ is_approved: isApproved }).eq('id', id);
   if (error) throw error;
 }
 
@@ -347,6 +366,7 @@ export async function createQuizQuestionAdmin(q: Partial<QuizQuestionDB>): Promi
     accepted_short_answers: q.accepted_short_answers ?? [],
     explanation_en: q.explanation_en ?? '',
     explanation_am: q.explanation_am ?? '',
+    is_approved: false,
   });
   if (error) throw error;
   return id;

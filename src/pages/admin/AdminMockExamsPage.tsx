@@ -3,17 +3,18 @@ import { mockExamService } from '@/features/mock-exams/mockExamService';
 import { PracticeExam } from '@/features/mock-exams/types';
 import type { Route, GradeId, Chapter, Subject } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
-import { 
-  Plus, Clock, BookOpen, Trash2, Edit3, 
+import {
+  Plus, Clock, BookOpen, Trash2, Edit3, CheckCircle2,
   ArrowLeft, X, Save, FileQuestion, Layers 
 } from 'lucide-react';
 
 interface AdminMockExamsPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null;
 }
 
-export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate }) => {
+export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate, userRole }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -165,6 +166,15 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
     }
   };
 
+  const handleApproval = async (exam: PracticeExam) => {
+    try {
+      await mockExamService.updateExam(exam.id, { is_approved: exam.is_approved !== true });
+      fetchExams();
+    } catch (err: any) {
+      alert(`ማጽደቅ አልተሳካም፦ ${err.message}`);
+    }
+  };
+
   // የክፍል ስም ማሳያ Helper
   const getGradeLabel = (gradeId: string) => {
     switch (gradeId) {
@@ -260,18 +270,25 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   <FileQuestion className="w-4 h-4"/>
                   ጥያቄዎች
                 </button>
-                <button
+                {userRole === 'admin' && <button
                   onClick={() => handleOpenEditModal(exam)}
                   className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg"
                 >
                   <Edit3 className="w-4 h-4"/>
-                </button>
-                <button
+                </button>}
+                {userRole === 'admin' && <button
                   onClick={() => handleDelete(exam.id)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
                 >
                   <Trash2 className="w-4 h-4"/>
-                </button>
+                </button>}
+                {userRole === 'admin' && <button
+                  onClick={() => handleApproval(exam)}
+                  className="p-2 rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600"
+                  aria-label={exam.is_approved ? 'Disapprove' : 'Approve'}
+                >
+                  <CheckCircle2 className="w-5 h-5"/>
+                </button>}
               </div>
             </div>
           ))}

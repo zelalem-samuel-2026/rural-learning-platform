@@ -9,9 +9,10 @@ import {
 interface AdminMockExamEditorPageProps {
   route: Route;
   navigate: (r: Route) => void;
+  userRole?: string | null;
 }
 
-export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = ({ route, navigate }) => {
+export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = ({ route, navigate, userRole }) => {
   const examId = (route as any).id;
   const [exam, setExam] = useState<PracticeExam | null>(null);
   const [questions, setQuestions] = useState<PracticeExamQuestion[]>([]);
@@ -91,6 +92,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
     setSaving(true);
     try {
       if (editingQuestion) {
+        if (userRole !== 'admin') return;
         await mockExamService.updateQuestion(editingQuestion.id, formData);
         alert('ጥያቄው ተሻሽሏል!');
       } else {
@@ -111,6 +113,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
   };
 
   const handleDelete = async (id: string) => {
+    if (userRole !== 'admin') return;
     if (!window.confirm('ይህንን ጥያቄ በእርግጥ ማጥፋት ይፈልጋሉ?')) return;
     try {
       await mockExamService.deleteQuestion(id);
@@ -180,18 +183,18 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
-                  <button
+                  {userRole === 'admin' && <button
                     onClick={() => handleOpenEditModal(q)}
                     className="p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg"
                   >
                     <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
+                  </button>}
+                  {userRole === 'admin' && <button
                     onClick={() => handleDelete(q.id)}
                     className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button>
+                  </button>}
                 </div>
               </div>
 

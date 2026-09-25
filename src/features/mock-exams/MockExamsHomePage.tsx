@@ -41,6 +41,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
+        .eq('is_approved', true)
         .order('created_at', { ascending: true });
 
       if (error) {

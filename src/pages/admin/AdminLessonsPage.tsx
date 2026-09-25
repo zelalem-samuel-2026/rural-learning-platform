@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Modal } from '@/components/ui/Modal';
 import {
   fetchLessonsAdmin, deleteLessonAdmin, duplicateLessonAdmin,
-  fetchGrades, fetchSubjects, fetchChapters, tr, difficultyColor,
+  fetchGrades, fetchSubjects, fetchChapters, setLessonApprovalAdmin, tr, difficultyColor,
 } from '@/lib/helpers';
 
 // 1. የ userRole ፕሮፕስ ተጨምሯል
@@ -111,6 +111,16 @@ export function AdminLessonsPage({ route, navigate, userRole }: AdminLessonsPage
     }
   };
 
+  const handleApproval = async (lesson: LessonDB) => {
+    try {
+      await setLessonApprovalAdmin(lesson.id, lesson.is_approved !== true);
+      showToast(dict.admin.saved);
+      load();
+    } catch {
+      showToast(dict.admin.error);
+    }
+  };
+
   return (
     <AdminLayout route={route} navigate={navigate}>
       {/* Header */}
@@ -174,15 +184,24 @@ export function AdminLessonsPage({ route, navigate, userRole }: AdminLessonsPage
                 </div>
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => navigate({ name: 'admin-lesson-edit', id: lesson.id })} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600 transition-colors" aria-label={dict.admin.edit}>
-                    <Edit3 className="w-4 h-4" />
-                  </button>
+                  {userRole === 'admin' && (
+                    <button onClick={() => navigate({ name: 'admin-lesson-edit', id: lesson.id })} className="p-2 rounded-lg hover:bg-primary-50 text-ink-500 hover:text-primary-600 transition-colors" aria-label={dict.admin.edit}>
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                  )}
                   <button onClick={() => navigate({ name: 'lesson', id: lesson.id })} className="p-2 rounded-lg hover:bg-accent-50 text-ink-500 hover:text-accent-600 transition-colors" aria-label={dict.admin.preview}>
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDuplicate(lesson)} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors" aria-label={dict.admin.duplicate}>
-                    <Copy className="w-4 h-4" />
-                  </button>
+                  {userRole === 'admin' && (
+                    <button onClick={() => handleDuplicate(lesson)} className="p-2 rounded-lg hover:bg-ink-100 text-ink-500 transition-colors" aria-label={dict.admin.duplicate}>
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  )}
+                  {userRole === 'admin' && (
+                    <button onClick={() => handleApproval(lesson)} className="p-2 rounded-lg hover:bg-success-50 text-ink-500 hover:text-success-600 transition-colors" aria-label={lesson.is_approved ? 'Disapprove' : 'Approve'}>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+                  )}
                   
                   {/* 3. የማጥፊያ ቁልፉ አድሚን ለሆነ ሰው ብቻ እንዲታይ ተቆልፏል */}
                   {userRole === 'admin' && (

@@ -12,6 +12,7 @@ export interface PracticeExam {
   max_minutes: number;
   status: 'draft' | 'published' | 'archived';
   created_at?: string;
+  is_approved?: boolean;
 }
 
 export interface PracticeExamQuestion {
@@ -26,6 +27,7 @@ export interface PracticeExamQuestion {
   explanation?: string;
   question_order: number;
   created_at?: string;
+  is_approved?: boolean;
 }
 
 // 🚀 የተማሪውን እያንዳንዱን ጥያቄ የመለሰበትን ዝርዝር የሚይዝ interface

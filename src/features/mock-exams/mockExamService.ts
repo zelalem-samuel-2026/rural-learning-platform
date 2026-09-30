@@ -9,7 +9,7 @@ export const mockExamService = {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
-      .eq('is_approved', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false });
 
     if (error) {

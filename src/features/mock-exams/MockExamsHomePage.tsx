@@ -1,58 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import { mockExamService } from './mockExamService';
 import { PracticeExam } from './types';
-import type { Route, GradeId } from '@/lib/types';
+import type { Route, GradeId, Subject } from '@/lib/types';
+import { fetchSubjectsForGrade } from '@/lib/helpers';
 import { BookOpen, Clock, FileText, ArrowRight, Sparkles, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface MockExamsHomePageProps {
   navigate: (r: Route) => void;
 }
 
-interface SubjectItem {
-  id: string;
-  name: string;
-  name_am?: string;
-  code?: string;
-  grade_ids?: string[];
-  description?: string;
-}
-
 export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }) => {
   const [selectedGrade, setSelectedGrade] = useState<GradeId>('grade-5');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('all');
   
-  const [subjects, setSubjects] = useState<SubjectItem[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [exams, setExams] = useState<PracticeExam[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // 1. ሁሉንም የትምህርት አይነቶች (Subjects) ከ Supabase መጫን
+  // 1. ለተመረጠው ክፍል የተመደቡ ትምህርቶችን መጫን
   useEffect(() => {
-    fetchSubjects();
-  }, []);
+    let active = true;
+    fetchSubjectsForGrade(selectedGrade)
+      .then((gradeSubjects) => {
+        if (active) setSubjects(gradeSubjects);
+      })
+      .catch((err) => {
+        console.error('Failed to load subjects for grade:', err);
+        if (active) setSubjects([]);
+      });
+    return () => { active = false; };
+  }, [selectedGrade]);
 
   // 2. የተመረጠው ክፍል ሲቀየር የፈተናዎችን ዝርዝር ማምጣት
   useEffect(() => {
     fetchPublishedExams();
   }, [selectedGrade]);
-
-  const fetchSubjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('*')
-        .or('is_approved.eq.true,is_approved.is.null,is_approved.eq.false')
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching subjects:', error);
-      } else {
-        setSubjects(data || []);
-      }
-    } catch (err) {
-      console.error('Failed to load subjects:', err);
-    }
-  };
 
   const fetchPublishedExams = async () => {
     setLoading(true);
@@ -79,13 +61,13 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
   ];
 
   // ለተመረጠው ክፍል የሚሆኑ ትምህርቶች ብቻ መለየት
-  const filteredSubjects = subjects.filter((s) => {
-    if (!s.grade_ids || s.grade_ids.length === 0) return true;
-    return s.grade_ids.includes(selectedGrade);
-  });
+  const filteredSubjects = subjects;
 
   // በትምህርት አይነት የመጨረሻ ፊልተር ማድረግ
   const displayedExams = exams.filter((exam) => {
+    if (exam.grade_id !== selectedGrade || !subjects.some((subject) => subject.id === exam.subject_id)) {
+      return false;
+    }
     if (selectedSubjectId === 'all') return true;
     return exam.subject_id === selectedSubjectId;
   });
@@ -152,7 +134,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
           <option value="all">ሁሉንም ትምህርቶች አሳይ ({filteredSubjects.length})</option>
           {filteredSubjects.map((sub) => (
             <option key={sub.id} value={sub.id}>
-              {sub.name_am || sub.name}
+              {sub.name.am || sub.name.en}
             </option>
           ))}
         </select>
@@ -187,7 +169,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-4">
                     <span className="px-3 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-xs rounded-full">
-                      {matchedSubject?.name_am || matchedSubject?.name || 'ትምህርት'}
+                      {matchedSubject?.name.am || matchedSubject?.name.en || 'ትምህርት'}
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full">
                       <CheckCircle className="w-3.5 h-3.5" /> ዝግጁ ነው

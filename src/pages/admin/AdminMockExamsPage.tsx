@@ -3,6 +3,7 @@ import { mockExamService } from '@/features/mock-exams/mockExamService';
 import { PracticeExam } from '@/features/mock-exams/types';
 import type { Route, GradeId, Chapter, Subject } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
+import { fetchSubjectsForGrade } from '@/lib/helpers';
 import {
   Plus, Clock, BookOpen, Trash2, Edit3, CheckCircle2,
   ArrowLeft, X, Save, FileQuestion, Layers 
@@ -16,7 +17,7 @@ interface AdminMockExamsPageProps {
 
 export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate, userRole }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showFormModal, setShowFormModal] = useState<boolean>(false);
@@ -38,15 +39,68 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
   useEffect(() => {
     fetchExams();
-    fetchSubjects();
   }, []);
 
   useEffect(() => {
-    if (formData.grade_id && formData.subject_id) {
-      fetchChapters(formData.grade_id, formData.subject_id);
-    } else {
+    let active = true;
+    fetchSubjectsForGrade(formData.grade_id)
+      .then((gradeSubjects) => {
+        if (!active) return;
+        setSubjects(gradeSubjects);
+        setFormData((prev) => {
+          const selectedSubjectIsValid = gradeSubjects.some((subject) => subject.id === prev.subject_id);
+          return {
+            ...prev,
+            subject_id: selectedSubjectIsValid ? prev.subject_id : gradeSubjects[0]?.id || '',
+            chapter_id: selectedSubjectIsValid ? prev.chapter_id : '',
+          };
+        });
+      })
+      .catch((err) => {
+        console.error('Error fetching subjects for grade:', err);
+        if (active) {
+          setSubjects([]);
+          setFormData((prev) => ({ ...prev, subject_id: '', chapter_id: '' }));
+        }
+      });
+    return () => { active = false; };
+  }, [formData.grade_id]);
+
+  useEffect(() => {
+    let active = true;
+    if (!formData.grade_id || !formData.subject_id) {
       setChapters([]);
+      setFormData((prev) => ({ ...prev, chapter_id: '' }));
+      return () => { active = false; };
     }
+    const loadChapters = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('chapters')
+          .select('*')
+          .eq('grade_id', formData.grade_id)
+          .eq('subject_id', formData.subject_id)
+          .order('order', { ascending: true });
+        if (error) throw error;
+        if (!active) return;
+        const matchingChapters = data || [];
+        setChapters(matchingChapters);
+        setFormData((prev) => ({
+          ...prev,
+          chapter_id: matchingChapters.some((chapter) => chapter.id === prev.chapter_id)
+            ? prev.chapter_id
+            : matchingChapters[0]?.id || '',
+        }));
+      } catch (err) {
+        console.error('Error fetching chapters for grade and subject:', err);
+        if (active) {
+          setChapters([]);
+          setFormData((prev) => ({ ...prev, chapter_id: '' }));
+        }
+      }
+    };
+    loadChapters();
+    return () => { active = false; };
   }, [formData.grade_id, formData.subject_id]);
 
   const fetchExams = async () => {
@@ -61,45 +115,13 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
     }
   };
 
-  const fetchSubjects = async () => {
-    try {
-      const { data } = await supabase.from('subjects').select('*');
-      if (data && data.length > 0) {
-        setSubjects(data);
-        setFormData(prev => ({ ...prev, subject_id: data[0].id }));
-      }
-    } catch (err) {
-      console.error('Error fetching subjects:', err);
-    }
-  };
-
-  const fetchChapters = async (gradeId: string, subjectId: string) => {
-    try {
-      const { data } = await supabase
-        .from('chapters')
-        .select('*')
-        .eq('grade_id', gradeId)
-        .eq('subject_id', subjectId)
-        .order('order', { ascending: true });
-
-      setChapters(data || []);
-      if (data && data.length > 0) {
-        setFormData(prev => ({ ...prev, chapter_id: data[0].id }));
-      } else {
-        setFormData(prev => ({ ...prev, chapter_id: '' }));
-      }
-    } catch (err) {
-      console.error('Error fetching chapters:', err);
-    }
-  };
-
   const handleOpenCreateModal = () => {
     setEditingExam(null);
     setFormData({
       title_am: '',
       title_en: '',
       grade_id: 'grade-5',
-      subject_id: subjects[0]?.id || '',
+      subject_id: '',
       chapter_id: '',
       recommended_minutes: 60,
       max_minutes: 120,
@@ -344,7 +366,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ክፍል</label>
                   <select
                     value={formData.grade_id}
-                    onChange={(e) => setFormData({ ...formData, grade_id: e.target.value as GradeId })}
+                    onChange={(e) => setFormData({ ...formData, grade_id: e.target.value as GradeId, chapter_id: '' })}
                     className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                   >
                     <option value="grade-5">5ኛ ክፍል</option>
@@ -361,9 +383,9 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                     onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
                     className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
                   >
-                    {subjects.map((sub: any) => (
+                    {subjects.map((sub) => (
                       <option key={sub.id} value={sub.id}>
-                        {sub?.title_am || sub?.name_am || sub?.name || 'Subject'} {sub?.title_en || sub?.name_en ? `(${sub.title_en || sub.name_en})` : ''}
+                        {sub.name.am || sub.name.en} ({sub.name.en})
                       </option>
                     ))}
                   </select>

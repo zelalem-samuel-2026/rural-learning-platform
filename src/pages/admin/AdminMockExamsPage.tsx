@@ -106,7 +106,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const data = await mockExamService.getAllExams();
+      const data = await mockExamService.getAllExamsForAdmin();
       setExams(data || []);
     } catch (err) {
       console.error('Failed to load exams:', err);
@@ -156,11 +156,19 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
     try {
       if (editingExam) {
         await mockExamService.updateExam(editingExam.id, formData);
+        if (userRole === 'admin' && formData.status === 'published') {
+          await mockExamService.setExamApproval(editingExam.id, true);
+        }
         alert('ፈተናው በስኬት ተሻሽሏል!');
         setShowFormModal(false);
-        fetchExams();
+        await fetchExams();
       } else {
-        const newExam = await mockExamService.createExam(formData);
+        let newExam = await mockExamService.createExam(formData);
+        if (userRole === 'admin' && formData.status === 'published') {
+          newExam = await mockExamService.setExamApproval(newExam.id, true);
+        }
+        setExams((prev) => [newExam, ...prev.filter((exam) => exam.id !== newExam.id)]);
+        await fetchExams();
         alert('አዲስ ፈተና በስኬት ተፈጥሯል!');
         setShowFormModal(false);
         
@@ -168,7 +176,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         if (examId) {
           navigate({ name: 'admin-mock-exam-edit', id: examId });
         } else {
-          fetchExams();
+          await fetchExams();
         }
       }
     } catch (err: any) {
@@ -190,8 +198,8 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
   const handleApproval = async (exam: PracticeExam) => {
     try {
-      await mockExamService.updateExam(exam.id, { is_approved: exam.is_approved !== true });
-      fetchExams();
+      const updatedExam = await mockExamService.setExamApproval(exam.id, exam.is_approved !== true);
+      setExams((prev) => prev.map((item) => item.id === updatedExam.id ? updatedExam : item));
     } catch (err: any) {
       alert(`ማጽደቅ አልተሳካም፦ ${err.message}`);
     }

@@ -41,7 +41,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
   const fetchExamAndQuestions = async () => {
     setLoading(true);
     try {
-      const examData = await mockExamService.getExamById(examId);
+      const examData = await mockExamService.getExamByIdForAdmin(examId);
       setExam(examData);
       
       const questionsData = await mockExamService.getQuestionsByExamId(examId);
@@ -100,7 +100,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
           ...formData,
           exam_id: examId,
           question_order: questions.length + 1,
-        });
+        }, userRole === 'admin' && exam?.is_approved === true);
         alert('አዲስ ጥያቄ ተጨምሯል!');
       }
       setShowFormModal(false);

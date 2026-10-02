@@ -1,5 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Component, ErrorInfo, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -9,7 +8,27 @@ interface Message {
 const SYSTEM_PROMPT =
   "You are Zola AI Assistant, a friendly high school tutor. Use the provided lesson context to answer. Answer in Amharic or English.";
 
-export function ZolaAIAssistant() {
+interface AssistantErrorBoundaryState {
+  hasError: boolean;
+}
+
+class AssistantErrorBoundary extends Component<{ children: ReactNode }, AssistantErrorBoundaryState> {
+  state: AssistantErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): AssistantErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Zola AI Assistant render failed:', error, errorInfo);
+  }
+
+  render() {
+    return this.state.hasError ? null : this.props.children;
+  }
+}
+
+function ZolaAIAssistantWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -30,29 +49,55 @@ export function ZolaAIAssistant() {
     setIsLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey || apiKey === 'INSERT_YOUR_API_KEY_HERE') {
-        throw new Error('Add your Gemini API key to VITE_GEMINI_API_KEY in .env to enable Zola.');
+      // ኤፒአይ ቁልፉ ከ Environment Variable የሚነበብበት መንገድ
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('Groq API Key is missing in environment variables.');
       }
 
       const context = document.body.innerText.substring(0, 3000);
-      const conversation = messages
-        .map((message) => `${message.role === 'user' ? 'Student' : 'Zola'}: ${message.text}`)
-        .join('\n');
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const result = await model.generateContent(
-        `${SYSTEM_PROMPT}\n\nLesson context:\n${context}\n\nConversation so far:\n${conversation}\nStudent: ${prompt}\nZola:`
-      );
-      const response = result.response.text();
-      setMessages((current) => [...current, { role: 'assistant', text: response }]);
+
+      const formattedMessages = [
+        {
+          role: 'system',
+          content: `${SYSTEM_PROMPT}\n\nLesson context from page:\n${context}`,
+        },
+        ...messages.map((m) => ({
+          role: m.role,
+          content: m.text,
+        })),
+        { role: 'user', content: prompt },
+      ];
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: formattedMessages,
+          temperature: 0.6,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Groq API request failed');
+      }
+
+      const responseText = data.choices[0]?.message?.content || 'መልስ ማግኘት አልተቻለም።';
+      setMessages((current) => [...current, { role: 'assistant', text: responseText }]);
     } catch (error) {
       console.error('Zola AI request failed:', error);
       setMessages((current) => [
         ...current,
         {
           role: 'assistant',
-          text: error instanceof Error ? error.message : 'Zola could not answer right now. Please try again.',
+          text: 'Zola ግንኙነት መፍጠር አልቻለም። እባክዎን የኢንተርኔት ግንኙነትዎን ወይም የ API Key ውቅር ያረጋግጡ።',
         },
       ]);
     } finally {
@@ -82,7 +127,7 @@ export function ZolaAIAssistant() {
           <div className="flex-1 space-y-3 overflow-y-auto bg-gray-50 p-3" aria-live="polite">
             {messages.length === 0 && (
               <p className="rounded-xl bg-white p-3 text-sm text-gray-600 shadow-sm">
-                Hi! Ask me anything about this page or lesson.
+                ሰላም! ስለዚሁ ትምህርት ወይም ገጽ የምትፈልገውን ማንኛውንም ጥያቄ ጠይቀኝ።
               </p>
             )}
             {messages.map((message, index) => (
@@ -97,7 +142,7 @@ export function ZolaAIAssistant() {
                 {message.text}
               </div>
             ))}
-            {isLoading && <p className="text-sm text-gray-500">Zola is thinking…</p>}
+            {isLoading && <p className="text-sm text-gray-500">Zola በማሰብ ላይ ነው...</p>}
             <div ref={messagesEndRef} />
           </div>
 
@@ -107,7 +152,7 @@ export function ZolaAIAssistant() {
               onChange={(event) => setInput(event.target.value)}
               disabled={isLoading}
               aria-label="Message Zola"
-              placeholder="Ask Zola a question..."
+              placeholder="ጥያቄዎን አስገቡ..."
               className="min-w-0 flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             />
             <button
@@ -130,5 +175,13 @@ export function ZolaAIAssistant() {
         </button>
       )}
     </div>
+  );
+}
+
+export function ZolaAIAssistant() {
+  return (
+    <AssistantErrorBoundary>
+      <ZolaAIAssistantWidget />
+    </AssistantErrorBoundary>
   );
 }

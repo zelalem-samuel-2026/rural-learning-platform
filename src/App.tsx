@@ -9,6 +9,7 @@ import { Navbar } from '@/components/Navbar';
 import { BottomNav } from '@/components/BottomNav';
 import { Footer } from '@/components/Footer';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { ZolaAIAssistant } from '@/components/ZolaAIAssistant';
 
 import { HomePage } from '@/pages/HomePage';
 import { AboutModule } from '@/pages/about';
@@ -168,6 +169,7 @@ function AppContent() {
 
       {!isAdminPage && <Footer navigate={navigate} />}
       {!isAdminPage && <BottomNav navigate={navigate} currentRoute={route} />}
+      <ZolaAIAssistant />
     </div>
   );
 }

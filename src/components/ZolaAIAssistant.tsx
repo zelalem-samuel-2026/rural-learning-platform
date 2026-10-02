@@ -49,13 +49,6 @@ function ZolaAIAssistantWidget() {
     setIsLoading(true);
 
     try {
-      // ኤፒአይ ቁልፉ ከ Environment Variable የሚነበብበት መንገድ
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-
-      if (!apiKey) {
-        throw new Error('Groq API Key is missing in environment variables.');
-      }
-
       const context = document.body.innerText.substring(0, 3000);
 
       const formattedMessages = [
@@ -70,23 +63,21 @@ function ZolaAIAssistantWidget() {
         { role: 'user', content: prompt },
       ];
 
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      // ጥያቄውን በቀጥታ ወደ ሰርቨርለስ ፋንክሽኑ (/api/chat) መላክ
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
           messages: formattedMessages,
-          temperature: 0.6,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Groq API request failed');
+        throw new Error(data.error?.message || data.error || 'Groq API request failed');
       }
 
       const responseText = data.choices[0]?.message?.content || 'መልስ ማግኘት አልተቻለም።';

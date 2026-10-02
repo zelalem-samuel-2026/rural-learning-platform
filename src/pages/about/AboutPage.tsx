@@ -109,7 +109,6 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
             style={{
               padding: '0.85rem 2rem',
               borderRadius: '50px',
-              border: 'none',
               backgroundColor: hoveredPill === pill ? '#0f172a' : '#ffffff',
               color: hoveredPill === pill ? '#ffffff' : '#334155',
               fontSize: '1rem',

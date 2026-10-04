@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type MouseEvent } from 'react';
 import {
   ArrowLeft, Save, Send, Eye, Plus, Trash2, ChevronUp, ChevronDown,
   CheckCircle2, FileEdit, BookOpen, ClipboardList, Info, X, Loader2, AlertCircle,
@@ -53,6 +53,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
   const [tab, setTab] = useState<Tab>('basic');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [jsonInput, setJsonInput] = useState('');
   const [lesson, setLesson] = useState<Partial<LessonDB>>(emptyLesson);
   const [questions, setQuestions] = useState<QuizQuestionDB[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -128,6 +129,135 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
 
   const update = <K extends keyof LessonDB>(key: K, value: LessonDB[K]) => {
     setLesson((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleAutoFillFromJSON = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      const cleanedInput = jsonInput.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsed: unknown = JSON.parse(cleanedInput);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Expected a lesson object');
+      }
+
+      const data = parsed as Record<string, unknown>;
+      const basicInfo = data.basicInfo && typeof data.basicInfo === 'object'
+        ? data.basicInfo as Record<string, unknown>
+        : data;
+      const localized = (value: unknown): { en: string; am: string } => {
+        if (typeof value === 'string') return { en: value, am: '' };
+        if (value && typeof value === 'object') {
+          const translations = value as Record<string, unknown>;
+          return {
+            en: typeof translations.en === 'string' ? translations.en : '',
+            am: typeof translations.am === 'string' ? translations.am : '',
+          };
+        }
+        return { en: '', am: '' };
+      };
+      const stringValue = (value: unknown, fallback = ''): string =>
+        typeof value === 'string' ? value : fallback;
+      const toSections = (value: unknown): LessonContentSection[] => {
+        if (!Array.isArray(value)) return [];
+        return value.map((item) => {
+          const section = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+          const paragraphs = Array.isArray(section.paragraphs)
+            ? section.paragraphs.filter((paragraph): paragraph is string => typeof paragraph === 'string')
+            : typeof section.content === 'string' ? [section.content] : [];
+          return {
+            type: section.type === 'example' ? 'example' : 'section',
+            heading: stringValue(section.heading ?? section.title),
+            paragraphs,
+          };
+        });
+      };
+
+      const overview = localized(data.overview ?? {
+        en: data.overview_en,
+        am: data.overview_am,
+      });
+      const recap = localized(data.recap ?? {
+        en: data.recap_en,
+        am: data.recap_am,
+      });
+      const rawSections = data.sections;
+      const sectionObject = rawSections && typeof rawSections === 'object' && !Array.isArray(rawSections)
+        ? rawSections as Record<string, unknown>
+        : null;
+      const sharedSections = toSections(rawSections);
+      const rawKeyPoints = data.keyPoints ?? data.key_points;
+      const keyPointObject = rawKeyPoints && typeof rawKeyPoints === 'object' && !Array.isArray(rawKeyPoints)
+        ? rawKeyPoints as Record<string, unknown>
+        : null;
+      const sharedKeyPoints = Array.isArray(rawKeyPoints)
+        ? rawKeyPoints.filter((point): point is string => typeof point === 'string')
+        : [];
+      const rawQuizzes = data.quizzes;
+      const mappedQuestions: QuizQuestionDB[] = Array.isArray(rawQuizzes) ? rawQuizzes.map((item, index) => {
+        const question = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+        const questionText = localized(question.question ?? {
+          en: question.question_en,
+          am: question.question_am,
+        });
+        const options = (value: unknown): string[] => Array.isArray(value)
+          ? value.map((option) => typeof option === 'string' ? option : '')
+          : ['', '', '', ''];
+        const correctIndex = question.correct_option_index;
+        return {
+          id: stringValue(question.id, `json-${Date.now()}-${index}`),
+          lesson_id: stringValue(question.lesson_id, currentId ?? ''),
+          order: typeof question.order === 'number' ? question.order : index + 1,
+          type: question.type === 'short' ? 'short' : 'mc',
+          question_en: questionText.en,
+          question_am: questionText.am,
+          options_en: options(question.options_en ?? question.options),
+          options_am: options(question.options_am),
+          correct_option_index: typeof correctIndex === 'number' ? correctIndex : null,
+          accepted_short_answers: Array.isArray(question.accepted_short_answers)
+            ? question.accepted_short_answers.filter((answer): answer is string => typeof answer === 'string')
+            : [],
+          explanation_en: stringValue(question.explanation_en),
+          explanation_am: stringValue(question.explanation_am),
+        };
+      }) : [];
+
+      setLesson((prev) => ({
+        ...prev,
+        grade_id: stringValue(basicInfo.grade_id ?? basicInfo.grade, prev.grade_id),
+        subject_id: stringValue(basicInfo.subject_id ?? basicInfo.subject, prev.subject_id),
+        chapter_id: stringValue(basicInfo.chapter_id ?? basicInfo.chapter, prev.chapter_id ?? '') || null,
+        order: typeof basicInfo.order === 'number' ? basicInfo.order : prev.order,
+        title_en: stringValue(basicInfo.title_en ?? basicInfo.title, prev.title_en),
+        title_am: stringValue(basicInfo.title_am, prev.title_am),
+        duration_min: typeof basicInfo.duration_min === 'number' ? basicInfo.duration_min : prev.duration_min,
+        difficulty: basicInfo.difficulty === 'intermediate' || basicInfo.difficulty === 'advanced'
+          ? basicInfo.difficulty
+          : basicInfo.difficulty === 'beginner' ? 'beginner' : prev.difficulty,
+        overview_en: overview.en || prev.overview_en,
+        overview_am: overview.am || prev.overview_am,
+        recap_en: recap.en || prev.recap_en,
+        recap_am: recap.am || prev.recap_am,
+        content_en: toSections(data.content_en ?? sectionObject?.en ?? sharedSections),
+        content_am: toSections(data.content_am ?? sectionObject?.am ?? sharedSections),
+        key_points_en: Array.isArray(data.key_points_en)
+          ? data.key_points_en.filter((point): point is string => typeof point === 'string')
+          : Array.isArray(keyPointObject?.en) ? keyPointObject.en.filter((point): point is string => typeof point === 'string') : sharedKeyPoints,
+        key_points_am: Array.isArray(data.key_points_am)
+          ? data.key_points_am.filter((point): point is string => typeof point === 'string')
+          : Array.isArray(keyPointObject?.am) ? keyPointObject.am.filter((point): point is string => typeof point === 'string') : sharedKeyPoints,
+        objectives_en: Array.isArray(data.objectives_en)
+          ? data.objectives_en.filter((objective): objective is string => typeof objective === 'string')
+          : prev.objectives_en,
+        objectives_am: Array.isArray(data.objectives_am)
+          ? data.objectives_am.filter((objective): objective is string => typeof objective === 'string')
+          : prev.objectives_am,
+      }));
+      setQuestions(mappedQuestions);
+      alert('✅ Success! All fields have been auto-filled!');
+      setJsonInput('');
+    } catch {
+      alert('❌ Invalid JSON. Please check the Claude output.');
+    }
   };
 
   const handleSave = async (status: 'draft' | 'published'): Promise<string | undefined> => {
@@ -374,6 +504,23 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       {tab === 'basic' && (
         <div className="space-y-6">
           <Card className="p-6">
+            <div className="mb-6 p-4 border-2 border-dashed border-green-500 rounded-lg bg-green-50/10">
+              <h3 className="font-bold text-gray-700 mb-2">⚡ Speed Importer (Paste Claude JSON here)</h3>
+              <textarea
+                className="w-full p-2 border border-green-300 rounded text-xs text-gray-600 mb-2 bg-white"
+                rows={4}
+                placeholder="Paste the raw JSON from Claude here..."
+                value={jsonInput}
+                onChange={(e) => setJsonInput(e.target.value)}
+              />
+              <button
+                onClick={handleAutoFillFromJSON}
+                type="button"
+                className="bg-green-600 text-white px-4 py-2 rounded font-medium hover:bg-green-700 transition-colors"
+              >
+                Auto-Fill Entire Lesson
+              </button>
+            </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <Select label={dict.admin.grade} value={lesson.grade_id ?? ''} onChange={(e) => update('grade_id', e.target.value as any)} options={grades.map((g) => ({ value: g.id, label: tr(g.name, lang) }))} />
               <Select label={dict.admin.subject} value={lesson.subject_id ?? ''} onChange={(e) => update('subject_id', e.target.value)} options={[{ value: '', label: '—' }, ...subjects.map((s) => ({ value: s.id, label: tr(s.name, lang) }))]} />

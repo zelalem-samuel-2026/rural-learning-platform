@@ -141,171 +141,98 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       }
 
       const data = parsed as Record<string, unknown>;
-      const basicInfo = data.basicInfo && typeof data.basicInfo === 'object'
-        ? data.basicInfo as Record<string, unknown>
-        : data;
-      const localized = (value: unknown): { en: string; am: string } => {
-        if (typeof value === 'string') return { en: value, am: '' };
-        if (value && typeof value === 'object') {
-          const translations = value as Record<string, unknown>;
-          return {
-            en: typeof translations.en === 'string' ? translations.en : '',
-            am: typeof translations.am === 'string' ? translations.am : '',
-          };
-        }
-        return { en: '', am: '' };
-      };
-      const stringValue = (value: unknown, fallback = ''): string =>
+      const asRecord = (value: unknown): Record<string, unknown> =>
+        value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const basicInfo = asRecord(data.basicInfo);
+      const lessonContent = asRecord(data.lessonContent);
+      const asString = (value: unknown, fallback = ''): string =>
         typeof value === 'string' ? value : fallback;
-      const toSections = (
-        value: unknown,
-        language?: 'en' | 'am',
-        defaultType: LessonContentSection['type'] = 'section',
-      ): LessonContentSection[] => {
-        if (!Array.isArray(value)) return [];
-        return value.map((item) => {
-          const section = item && typeof item === 'object' ? item as Record<string, unknown> : {};
-          const localizedHeading = localized(section.heading ?? section.title);
-          const rawParagraphs = section.paragraphs ?? section.content;
-          const languageParagraphs = rawParagraphs && typeof rawParagraphs === 'object' && !Array.isArray(rawParagraphs)
-            ? (rawParagraphs as Record<string, unknown>)[language ?? 'en']
-            : rawParagraphs;
-          const paragraphs = Array.isArray(languageParagraphs)
-            ? languageParagraphs.filter((paragraph): paragraph is string => typeof paragraph === 'string')
-            : typeof languageParagraphs === 'string' ? [languageParagraphs] : [];
+      const asNumber = (value: unknown, fallback: number): number =>
+        typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+      const asStringArray = (value: unknown, fallback: string[] = []): string[] =>
+        Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : fallback;
+      const bilingual = (value: unknown, language: 'english' | 'amharic'): string => {
+        const localized = asRecord(value);
+        return asString(localized[language]);
+      };
+      const rawSections = data.sections ?? lessonContent.sections;
+      const sections = Array.isArray(rawSections) ? rawSections : null;
+      const toSections = (language: 'english' | 'amharic'): LessonContentSection[] =>
+        (sections ?? []).map((item) => {
+          const section = asRecord(item);
+          const heading = asRecord(section.heading);
+          const paragraphs = asRecord(section.paragraphs);
+          const rawParagraphs = paragraphs[language] ?? section[`content${language === 'english' ? 'En' : 'Am'}`];
+          const text = typeof rawParagraphs === 'string'
+            ? [rawParagraphs]
+            : asStringArray(rawParagraphs);
           return {
-            type: section.type === 'example' || defaultType === 'example' ? 'example' : 'section',
-            heading: language ? localizedHeading[language] : stringValue(section.heading ?? section.title),
-            paragraphs,
+            type: section.type === 'example' ? 'example' : 'section',
+            heading: asString(
+              heading[language] ?? section[`heading${language === 'english' ? 'En' : 'Am'}`],
+            ),
+            paragraphs: text,
           };
         });
-      };
-      const localizedList = (value: unknown, language: 'en' | 'am'): string[] | undefined => {
-        if (Array.isArray(value)) {
-          return value.map((item) => {
-            if (typeof item === 'string') return item;
-            if (item && typeof item === 'object') {
-              const entry = item as Record<string, unknown>;
-              return stringValue(entry[language] ?? entry.text ?? entry.label);
-            }
-            return '';
-          }).filter(Boolean);
-        }
-        if (value && typeof value === 'object') {
-          const entries = (value as Record<string, unknown>)[language];
-          return Array.isArray(entries)
-            ? entries.filter((entry): entry is string => typeof entry === 'string')
-            : undefined;
-        }
-        return undefined;
-      };
-
-      const overview = localized(data.overview ?? {
-        en: data.overview_en,
-        am: data.overview_am,
-      });
-      const recap = localized(data.recap ?? {
-        en: data.recap_en,
-        am: data.recap_am,
-      });
-      const rawSections = data.sections;
-      const sectionObject = rawSections && typeof rawSections === 'object' && !Array.isArray(rawSections)
-        ? rawSections as Record<string, unknown>
-        : null;
-      const rawExamples = data.examples;
-      const exampleObject = rawExamples && typeof rawExamples === 'object' && !Array.isArray(rawExamples)
-        ? rawExamples as Record<string, unknown>
-        : null;
-      const hasSections = data.content_en !== undefined || data.content_am !== undefined || rawSections !== undefined;
-      const hasExamples = rawExamples !== undefined;
-      const rawKeyPoints = data.keyPoints ?? data.key_points;
-      const keyPointObject = rawKeyPoints && typeof rawKeyPoints === 'object' && !Array.isArray(rawKeyPoints)
-        ? rawKeyPoints as Record<string, unknown>
-        : null;
-      const sharedKeyPointsEn = localizedList(rawKeyPoints, 'en');
-      const sharedKeyPointsAm = localizedList(rawKeyPoints, 'am');
-      const rawObjectives = data.objectives ?? data.learningObjectives ?? data.learning_objectives;
-      const rawQuizzes = data.quizzes ?? data.quizQuestions ?? data.quiz_questions ?? data.questions;
-      const hasQuizzes = rawQuizzes !== undefined;
-      const mappedQuestions: QuizQuestionDB[] = Array.isArray(rawQuizzes) ? rawQuizzes.map((item, index) => {
-        const question = item && typeof item === 'object' ? item as Record<string, unknown> : {};
-        const questionText = localized(question.question ?? {
-          en: question.question_en,
-          am: question.question_am,
-        });
-        const options = (value: unknown): string[] => Array.isArray(value)
-          ? value.map((option) => typeof option === 'string' ? option : '')
-          : ['', '', '', ''];
-        const correctIndex = question.correct_option_index;
+      const rawQuizzes = data.quizzes;
+      const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : null;
+      const mappedQuestions: QuizQuestionDB[] = (quizzes ?? []).map((item, index) => {
+        const quiz = asRecord(item);
+        const question = asRecord(quiz.question);
+        const explanation = asRecord(quiz.explanation);
+        const options = asStringArray(quiz.options ?? quiz.optionsEn, ['', '', '', '']);
         return {
-          id: stringValue(question.id, `json-${Date.now()}-${index}`),
-          lesson_id: stringValue(question.lesson_id, currentId ?? ''),
-          order: typeof question.order === 'number' ? question.order : index + 1,
-          type: question.type === 'short' ? 'short' : 'mc',
-          question_en: questionText.en,
-          question_am: questionText.am,
-          options_en: options(question.options_en ?? question.options),
-          options_am: options(question.options_am),
-          correct_option_index: typeof correctIndex === 'number' ? correctIndex : null,
-          accepted_short_answers: Array.isArray(question.accepted_short_answers)
-            ? question.accepted_short_answers.filter((answer): answer is string => typeof answer === 'string')
-            : [],
-          explanation_en: stringValue(question.explanation_en),
-          explanation_am: stringValue(question.explanation_am),
+          id: asString(quiz.id, `json-${Date.now()}-${index}`),
+          lesson_id: currentId ?? '',
+          order: asNumber(quiz.order, index + 1),
+          type: 'mc',
+          question_en: asString(question.english ?? quiz.questionEn),
+          question_am: asString(question.amharic ?? quiz.questionAm),
+          options_en: options,
+          options_am: asStringArray(quiz.optionsAm, ['', '', '', '']),
+          correct_option_index: asNumber(quiz.correctOptionIndex ?? quiz.correct_option_index, 0),
+          accepted_short_answers: [],
+          explanation_en: asString(explanation.english ?? quiz.explanationEn),
+          explanation_am: asString(explanation.amharic ?? quiz.explanationAm),
         };
-      }) : [];
+      });
+      const objectives = asRecord(lessonContent.learningObjectives);
+      const keyPoints = asRecord(lessonContent.keyPoints ?? data.keyPoints);
+      const basicTitle = asRecord(basicInfo.title);
+      const overview = asRecord(basicInfo.shortOverview);
+      const recap = asRecord(basicInfo.recap);
 
       setLesson((prev) => ({
         ...prev,
-        grade_id: stringValue(basicInfo.grade_id ?? basicInfo.grade, prev.grade_id),
-        subject_id: stringValue(basicInfo.subject_id ?? basicInfo.subject, prev.subject_id),
-        chapter_id: stringValue(basicInfo.chapter_id ?? basicInfo.chapter, prev.chapter_id ?? '') || null,
-        order: typeof basicInfo.order === 'number' ? basicInfo.order : prev.order,
-        title_en: stringValue(basicInfo.title_en ?? basicInfo.title, prev.title_en),
-        title_am: stringValue(basicInfo.title_am, prev.title_am),
-        duration_min: typeof basicInfo.duration_min === 'number' ? basicInfo.duration_min : prev.duration_min,
-        difficulty: basicInfo.difficulty === 'intermediate' || basicInfo.difficulty === 'advanced'
-          ? basicInfo.difficulty
-          : basicInfo.difficulty === 'beginner' ? 'beginner' : prev.difficulty,
-        overview_en: overview.en || prev.overview_en,
-        overview_am: overview.am || prev.overview_am,
-        recap_en: recap.en || prev.recap_en,
-        recap_am: recap.am || prev.recap_am,
-        content_en: hasSections || hasExamples
-          ? [
-              ...toSections(data.content_en ?? sectionObject?.en ?? sectionObject?.english ?? rawSections, 'en'),
-              ...toSections(exampleObject?.en ?? exampleObject?.english ?? rawExamples, 'en', 'example'),
-            ]
-          : prev.content_en,
-        content_am: hasSections || hasExamples
-          ? [
-              ...toSections(data.content_am ?? sectionObject?.am ?? sectionObject?.amharic ?? rawSections, 'am'),
-              ...toSections(exampleObject?.am ?? exampleObject?.amharic ?? rawExamples, 'am', 'example'),
-            ]
-          : prev.content_am,
-        key_points_en: localizedList(data.key_points_en, 'en')
-          ?? localizedList(keyPointObject?.en, 'en')
-          ?? sharedKeyPointsEn
-          ?? prev.key_points_en,
-        key_points_am: localizedList(data.key_points_am, 'am')
-          ?? localizedList(keyPointObject?.am, 'am')
-          ?? sharedKeyPointsAm
-          ?? prev.key_points_am,
-        objectives_en: localizedList(data.objectives_en, 'en')
-          ?? localizedList(data.learning_objectives_en, 'en')
-          ?? localizedList(rawObjectives, 'en')
-          ?? prev.objectives_en,
-        objectives_am: localizedList(data.objectives_am, 'am')
-          ?? localizedList(data.learning_objectives_am, 'am')
-          ?? localizedList(rawObjectives, 'am')
-          ?? prev.objectives_am,
+        grade_id: asString(basicInfo.grade, prev.grade_id),
+        subject_id: asString(basicInfo.subject, prev.subject_id),
+        chapter_id: asString(basicInfo.chapter, prev.chapter_id ?? '') || null,
+        order: asNumber(basicInfo.orderNumber, prev.order ?? 1),
+        difficulty: basicInfo.difficultyLevel === 'beginner'
+          || basicInfo.difficultyLevel === 'intermediate'
+          || basicInfo.difficultyLevel === 'advanced'
+          ? basicInfo.difficultyLevel
+          : prev.difficulty,
+        duration_min: asNumber(basicInfo.durationMinutes, prev.duration_min ?? 15),
+        title_en: asString(basicTitle.english ?? basicInfo.titleEn, prev.title_en),
+        title_am: asString(basicTitle.amharic ?? basicInfo.titleAm, prev.title_am),
+        overview_en: asString(overview.english ?? asRecord(data.overview).en ?? basicInfo.overviewEn, prev.overview_en),
+        overview_am: asString(overview.amharic ?? asRecord(data.overview).am ?? basicInfo.overviewAm, prev.overview_am),
+        recap_en: asString(recap.english ?? asRecord(data.recap).en ?? basicInfo.recapEn, prev.recap_en),
+        recap_am: asString(recap.amharic ?? asRecord(data.recap).am ?? basicInfo.recapAm, prev.recap_am),
+        objectives_en: asStringArray(objectives.english ?? lessonContent.objectivesEn, prev.objectives_en),
+        objectives_am: asStringArray(objectives.amharic ?? lessonContent.objectivesAm, prev.objectives_am),
+        content_en: sections ? toSections('english') : prev.content_en,
+        content_am: sections ? toSections('amharic') : prev.content_am,
+        key_points_en: asStringArray(keyPoints.english ?? keyPoints.en ?? lessonContent.keyPointsEn, prev.key_points_en),
+        key_points_am: asStringArray(keyPoints.amharic ?? keyPoints.am ?? lessonContent.keyPointsAm, prev.key_points_am),
       }));
-      if (hasQuizzes) setQuestions(mappedQuestions);
-      setTab('content');
-      alert('✅ Success! All fields have been auto-filled!');
+      if (quizzes) setQuestions(mappedQuestions);
+      alert('✅ Success! All fields have been perfectly auto-filled!');
       setJsonInput('');
-    } catch {
-      alert('❌ Invalid JSON. Please check the Claude output.');
+    } catch (error) {
+      console.error(error);
+      alert('❌ Invalid JSON or Mapping Error. Please check console.');
     }
   };
 

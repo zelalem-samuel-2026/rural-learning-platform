@@ -157,19 +157,47 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       };
       const stringValue = (value: unknown, fallback = ''): string =>
         typeof value === 'string' ? value : fallback;
-      const toSections = (value: unknown): LessonContentSection[] => {
+      const toSections = (
+        value: unknown,
+        language?: 'en' | 'am',
+        defaultType: LessonContentSection['type'] = 'section',
+      ): LessonContentSection[] => {
         if (!Array.isArray(value)) return [];
         return value.map((item) => {
           const section = item && typeof item === 'object' ? item as Record<string, unknown> : {};
-          const paragraphs = Array.isArray(section.paragraphs)
-            ? section.paragraphs.filter((paragraph): paragraph is string => typeof paragraph === 'string')
-            : typeof section.content === 'string' ? [section.content] : [];
+          const localizedHeading = localized(section.heading ?? section.title);
+          const rawParagraphs = section.paragraphs ?? section.content;
+          const languageParagraphs = rawParagraphs && typeof rawParagraphs === 'object' && !Array.isArray(rawParagraphs)
+            ? (rawParagraphs as Record<string, unknown>)[language ?? 'en']
+            : rawParagraphs;
+          const paragraphs = Array.isArray(languageParagraphs)
+            ? languageParagraphs.filter((paragraph): paragraph is string => typeof paragraph === 'string')
+            : typeof languageParagraphs === 'string' ? [languageParagraphs] : [];
           return {
-            type: section.type === 'example' ? 'example' : 'section',
-            heading: stringValue(section.heading ?? section.title),
+            type: section.type === 'example' || defaultType === 'example' ? 'example' : 'section',
+            heading: language ? localizedHeading[language] : stringValue(section.heading ?? section.title),
             paragraphs,
           };
         });
+      };
+      const localizedList = (value: unknown, language: 'en' | 'am'): string[] | undefined => {
+        if (Array.isArray(value)) {
+          return value.map((item) => {
+            if (typeof item === 'string') return item;
+            if (item && typeof item === 'object') {
+              const entry = item as Record<string, unknown>;
+              return stringValue(entry[language] ?? entry.text ?? entry.label);
+            }
+            return '';
+          }).filter(Boolean);
+        }
+        if (value && typeof value === 'object') {
+          const entries = (value as Record<string, unknown>)[language];
+          return Array.isArray(entries)
+            ? entries.filter((entry): entry is string => typeof entry === 'string')
+            : undefined;
+        }
+        return undefined;
       };
 
       const overview = localized(data.overview ?? {
@@ -184,15 +212,21 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       const sectionObject = rawSections && typeof rawSections === 'object' && !Array.isArray(rawSections)
         ? rawSections as Record<string, unknown>
         : null;
-      const sharedSections = toSections(rawSections);
+      const rawExamples = data.examples;
+      const exampleObject = rawExamples && typeof rawExamples === 'object' && !Array.isArray(rawExamples)
+        ? rawExamples as Record<string, unknown>
+        : null;
+      const hasSections = data.content_en !== undefined || data.content_am !== undefined || rawSections !== undefined;
+      const hasExamples = rawExamples !== undefined;
       const rawKeyPoints = data.keyPoints ?? data.key_points;
       const keyPointObject = rawKeyPoints && typeof rawKeyPoints === 'object' && !Array.isArray(rawKeyPoints)
         ? rawKeyPoints as Record<string, unknown>
         : null;
-      const sharedKeyPoints = Array.isArray(rawKeyPoints)
-        ? rawKeyPoints.filter((point): point is string => typeof point === 'string')
-        : [];
-      const rawQuizzes = data.quizzes;
+      const sharedKeyPointsEn = localizedList(rawKeyPoints, 'en');
+      const sharedKeyPointsAm = localizedList(rawKeyPoints, 'am');
+      const rawObjectives = data.objectives ?? data.learningObjectives ?? data.learning_objectives;
+      const rawQuizzes = data.quizzes ?? data.quizQuestions ?? data.quiz_questions ?? data.questions;
+      const hasQuizzes = rawQuizzes !== undefined;
       const mappedQuestions: QuizQuestionDB[] = Array.isArray(rawQuizzes) ? rawQuizzes.map((item, index) => {
         const question = item && typeof item === 'object' ? item as Record<string, unknown> : {};
         const questionText = localized(question.question ?? {
@@ -237,22 +271,37 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         overview_am: overview.am || prev.overview_am,
         recap_en: recap.en || prev.recap_en,
         recap_am: recap.am || prev.recap_am,
-        content_en: toSections(data.content_en ?? sectionObject?.en ?? sharedSections),
-        content_am: toSections(data.content_am ?? sectionObject?.am ?? sharedSections),
-        key_points_en: Array.isArray(data.key_points_en)
-          ? data.key_points_en.filter((point): point is string => typeof point === 'string')
-          : Array.isArray(keyPointObject?.en) ? keyPointObject.en.filter((point): point is string => typeof point === 'string') : sharedKeyPoints,
-        key_points_am: Array.isArray(data.key_points_am)
-          ? data.key_points_am.filter((point): point is string => typeof point === 'string')
-          : Array.isArray(keyPointObject?.am) ? keyPointObject.am.filter((point): point is string => typeof point === 'string') : sharedKeyPoints,
-        objectives_en: Array.isArray(data.objectives_en)
-          ? data.objectives_en.filter((objective): objective is string => typeof objective === 'string')
-          : prev.objectives_en,
-        objectives_am: Array.isArray(data.objectives_am)
-          ? data.objectives_am.filter((objective): objective is string => typeof objective === 'string')
-          : prev.objectives_am,
+        content_en: hasSections || hasExamples
+          ? [
+              ...toSections(data.content_en ?? sectionObject?.en ?? sectionObject?.english ?? rawSections, 'en'),
+              ...toSections(exampleObject?.en ?? exampleObject?.english ?? rawExamples, 'en', 'example'),
+            ]
+          : prev.content_en,
+        content_am: hasSections || hasExamples
+          ? [
+              ...toSections(data.content_am ?? sectionObject?.am ?? sectionObject?.amharic ?? rawSections, 'am'),
+              ...toSections(exampleObject?.am ?? exampleObject?.amharic ?? rawExamples, 'am', 'example'),
+            ]
+          : prev.content_am,
+        key_points_en: localizedList(data.key_points_en, 'en')
+          ?? localizedList(keyPointObject?.en, 'en')
+          ?? sharedKeyPointsEn
+          ?? prev.key_points_en,
+        key_points_am: localizedList(data.key_points_am, 'am')
+          ?? localizedList(keyPointObject?.am, 'am')
+          ?? sharedKeyPointsAm
+          ?? prev.key_points_am,
+        objectives_en: localizedList(data.objectives_en, 'en')
+          ?? localizedList(data.learning_objectives_en, 'en')
+          ?? localizedList(rawObjectives, 'en')
+          ?? prev.objectives_en,
+        objectives_am: localizedList(data.objectives_am, 'am')
+          ?? localizedList(data.learning_objectives_am, 'am')
+          ?? localizedList(rawObjectives, 'am')
+          ?? prev.objectives_am,
       }));
-      setQuestions(mappedQuestions);
+      if (hasQuizzes) setQuestions(mappedQuestions);
+      setTab('content');
       alert('✅ Success! All fields have been auto-filled!');
       setJsonInput('');
     } catch {

@@ -131,7 +131,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
     setLesson((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleAutoFillFromJSON = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleAutoFillFromJSON = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     try {
       const cleanedInput = jsonInput.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -145,16 +145,75 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
       const basicInfo = asRecord(data.basicInfo);
       const lessonContent = asRecord(data.lessonContent);
+      const asText = (value: unknown): string =>
+        typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
       const asString = (value: unknown, fallback = ''): string =>
-        typeof value === 'string' ? value : fallback;
+        asText(value) || fallback;
       const asNumber = (value: unknown, fallback: number): number =>
-        typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+        (typeof value === 'number' || typeof value === 'string') && Number.isFinite(Number(value))
+          ? Number(value)
+          : fallback;
       const asStringArray = (value: unknown, fallback: string[] = []): string[] =>
-        Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : fallback;
-      const bilingual = (value: unknown, language: 'english' | 'amharic'): string => {
-        const localized = asRecord(value);
-        return asString(localized[language]);
+        Array.isArray(value) ? value.map(asText).filter(Boolean) : fallback;
+      const matchOption = <T,>(
+        value: unknown,
+        options: T[],
+        getId: (option: T) => string,
+        getLabels: (option: T) => string[],
+      ): string => {
+        const requested = asText(value).toLocaleLowerCase();
+        if (!requested) return '';
+        const exactId = options.find((option) => getId(option).toLocaleLowerCase() === requested);
+        if (exactId) return getId(exactId);
+        const matchedLabel = options.find((option) =>
+          getLabels(option).some((label) => label.trim().toLocaleLowerCase() === requested),
+        );
+        return matchedLabel ? getId(matchedLabel) : '';
       };
+      const rawGrade = basicInfo.grade;
+      const gradeText = asText(rawGrade);
+      const requestedGradeNumber = gradeText.match(/\d+/)?.[0];
+      const selectedGrade = grades.find((grade) =>
+        grade.id.toLocaleLowerCase() === gradeText.toLocaleLowerCase()
+        || grade.name.en.trim().toLocaleLowerCase() === gradeText.toLocaleLowerCase()
+        || grade.name.am.trim().toLocaleLowerCase() === gradeText.toLocaleLowerCase()
+        || (requestedGradeNumber !== undefined && grade.number === Number(requestedGradeNumber)),
+      );
+      const gradeId = selectedGrade?.id ?? '';
+      const resolvedGradeId = gradeId || lesson.grade_id || '';
+      const subjectText = asText(basicInfo.subject);
+      const allSubjects = await fetchSubjects();
+      const selectableSubjects = resolvedGradeId === 'grade-7' || resolvedGradeId === 'grade-8'
+        ? allSubjects
+        : allSubjects.filter((subject) => {
+            const subjectKey = `${subject.id} ${subject.name.en} ${subject.name.am}`.toLowerCase();
+            return !subjectKey.includes('social') && !subjectKey.includes('ማህበራዊ')
+              && !subjectKey.includes('citizen') && !subjectKey.includes('ዜግነት');
+          });
+      const subjectId = matchOption(
+        subjectText,
+        selectableSubjects,
+        (subject) => subject.id,
+        (subject) => [subject.name.en, subject.name.am],
+      );
+      const chapterText = asText(basicInfo.chapter);
+      const availableChapters = resolvedGradeId && subjectId
+        ? await fetchChapters(resolvedGradeId, subjectId)
+        : [];
+      const chapterId = matchOption(
+        chapterText,
+        availableChapters,
+        (chapter) => chapter.id,
+        (chapter) => [chapter.title_en, chapter.title_am],
+      );
+      const difficultyText = asText(basicInfo.difficultyLevel).toLocaleLowerCase();
+      const difficulty = difficultyText === 'beginner' || difficultyText === 'easy'
+        ? 'beginner'
+        : difficultyText === 'intermediate' || difficultyText === 'medium'
+          ? 'intermediate'
+          : difficultyText === 'advanced' || difficultyText === 'hard'
+            ? 'advanced'
+            : undefined;
       const rawSections = data.sections ?? lessonContent.sections;
       const sections = Array.isArray(rawSections) ? rawSections : null;
       const toSections = (language: 'english' | 'amharic'): LessonContentSection[] =>
@@ -197,6 +256,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         };
       });
       const objectives = asRecord(lessonContent.learningObjectives);
+      const parsedObjectives = asRecord(data.objectives);
       const keyPoints = asRecord(lessonContent.keyPoints ?? data.keyPoints);
       const basicTitle = asRecord(basicInfo.title);
       const overview = asRecord(basicInfo.shortOverview);
@@ -204,24 +264,26 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
 
       setLesson((prev) => ({
         ...prev,
-        grade_id: asString(basicInfo.grade, prev.grade_id),
-        subject_id: asString(basicInfo.subject, prev.subject_id),
-        chapter_id: asString(basicInfo.chapter, prev.chapter_id ?? '') || null,
+        grade_id: resolvedGradeId || prev.grade_id,
+        subject_id: subjectId || (resolvedGradeId ? '' : prev.subject_id),
+        chapter_id: chapterId || null,
         order: asNumber(basicInfo.orderNumber, prev.order ?? 1),
-        difficulty: basicInfo.difficultyLevel === 'beginner'
-          || basicInfo.difficultyLevel === 'intermediate'
-          || basicInfo.difficultyLevel === 'advanced'
-          ? basicInfo.difficultyLevel
-          : prev.difficulty,
-        duration_min: asNumber(basicInfo.durationMinutes, prev.duration_min ?? 15),
+        difficulty: difficulty ?? prev.difficulty,
+        duration_min: asNumber(basicInfo.durationMinutes, 35),
         title_en: asString(basicTitle.english ?? basicInfo.titleEn, prev.title_en),
         title_am: asString(basicTitle.amharic ?? basicInfo.titleAm, prev.title_am),
         overview_en: asString(overview.english ?? asRecord(data.overview).en ?? basicInfo.overviewEn, prev.overview_en),
         overview_am: asString(overview.amharic ?? asRecord(data.overview).am ?? basicInfo.overviewAm, prev.overview_am),
         recap_en: asString(recap.english ?? asRecord(data.recap).en ?? basicInfo.recapEn, prev.recap_en),
         recap_am: asString(recap.amharic ?? asRecord(data.recap).am ?? basicInfo.recapAm, prev.recap_am),
-        objectives_en: asStringArray(objectives.english ?? lessonContent.objectivesEn, prev.objectives_en),
-        objectives_am: asStringArray(objectives.amharic ?? lessonContent.objectivesAm, prev.objectives_am),
+        objectives_en: asStringArray(
+          objectives.english ?? lessonContent.objectivesEn ?? parsedObjectives.en,
+          prev.objectives_en,
+        ),
+        objectives_am: asStringArray(
+          objectives.amharic ?? lessonContent.objectivesAm ?? parsedObjectives.am,
+          prev.objectives_am,
+        ),
         content_en: sections ? toSections('english') : prev.content_en,
         content_am: sections ? toSections('amharic') : prev.content_am,
         key_points_en: asStringArray(keyPoints.english ?? keyPoints.en ?? lessonContent.keyPointsEn, prev.key_points_en),

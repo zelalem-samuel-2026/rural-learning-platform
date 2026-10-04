@@ -235,13 +235,12 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         });
       const rawQuizzes = data.quizzes;
       const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : null;
-      const mappedQuestions: QuizQuestionDB[] = (quizzes ?? []).map((item, index) => {
+      const mappedQuestions: Partial<QuizQuestionDB>[] = (quizzes ?? []).map((item, index) => {
         const quiz = asRecord(item);
         const question = asRecord(quiz.question);
         const explanation = asRecord(quiz.explanation);
         const options = asStringArray(quiz.options ?? quiz.optionsEn, ['', '', '', '']);
         return {
-          id: asString(quiz.id, `json-${Date.now()}-${index}`),
           lesson_id: currentId ?? '',
           order: asNumber(quiz.order, index + 1),
           type: 'mc',
@@ -262,34 +261,62 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       const overview = asRecord(basicInfo.shortOverview);
       const recap = asRecord(basicInfo.recap);
 
-      setLesson((prev) => ({
-        ...prev,
-        grade_id: resolvedGradeId || prev.grade_id,
-        subject_id: subjectId || (resolvedGradeId ? '' : prev.subject_id),
+      const mappedLesson: Partial<LessonDB> = {
+        ...lesson,
+        grade_id: resolvedGradeId || lesson.grade_id,
+        subject_id: subjectId || (resolvedGradeId ? '' : lesson.subject_id),
         chapter_id: chapterId || null,
-        order: asNumber(basicInfo.orderNumber, prev.order ?? 1),
-        difficulty: difficulty ?? prev.difficulty,
+        order: asNumber(basicInfo.orderNumber, lesson.order ?? 1),
+        difficulty: difficulty ?? lesson.difficulty,
         duration_min: asNumber(basicInfo.durationMinutes, 35),
-        title_en: asString(basicTitle.english ?? basicInfo.titleEn, prev.title_en),
-        title_am: asString(basicTitle.amharic ?? basicInfo.titleAm, prev.title_am),
-        overview_en: asString(overview.english ?? asRecord(data.overview).en ?? basicInfo.overviewEn, prev.overview_en),
-        overview_am: asString(overview.amharic ?? asRecord(data.overview).am ?? basicInfo.overviewAm, prev.overview_am),
-        recap_en: asString(recap.english ?? asRecord(data.recap).en ?? basicInfo.recapEn, prev.recap_en),
-        recap_am: asString(recap.amharic ?? asRecord(data.recap).am ?? basicInfo.recapAm, prev.recap_am),
+        title_en: asString(basicTitle.english ?? basicInfo.titleEn, lesson.title_en),
+        title_am: asString(basicTitle.amharic ?? basicInfo.titleAm, lesson.title_am),
+        overview_en: asString(overview.english ?? asRecord(data.overview).en ?? basicInfo.overviewEn, lesson.overview_en),
+        overview_am: asString(overview.amharic ?? asRecord(data.overview).am ?? basicInfo.overviewAm, lesson.overview_am),
+        recap_en: asString(recap.english ?? asRecord(data.recap).en ?? basicInfo.recapEn, lesson.recap_en),
+        recap_am: asString(recap.amharic ?? asRecord(data.recap).am ?? basicInfo.recapAm, lesson.recap_am),
         objectives_en: asStringArray(
           objectives.english ?? lessonContent.objectivesEn ?? parsedObjectives.en,
-          prev.objectives_en,
+          lesson.objectives_en,
         ),
         objectives_am: asStringArray(
           objectives.amharic ?? lessonContent.objectivesAm ?? parsedObjectives.am,
-          prev.objectives_am,
+          lesson.objectives_am,
         ),
-        content_en: sections ? toSections('english') : prev.content_en,
-        content_am: sections ? toSections('amharic') : prev.content_am,
-        key_points_en: asStringArray(keyPoints.english ?? keyPoints.en ?? lessonContent.keyPointsEn, prev.key_points_en),
-        key_points_am: asStringArray(keyPoints.amharic ?? keyPoints.am ?? lessonContent.keyPointsAm, prev.key_points_am),
-      }));
-      if (quizzes) setQuestions(mappedQuestions);
+        content_en: sections ? toSections('english') : lesson.content_en,
+        content_am: sections ? toSections('amharic') : lesson.content_am,
+        key_points_en: asStringArray(keyPoints.english ?? keyPoints.en ?? lessonContent.keyPointsEn, lesson.key_points_en),
+        key_points_am: asStringArray(keyPoints.amharic ?? keyPoints.am ?? lessonContent.keyPointsAm, lesson.key_points_am),
+      };
+      setLesson(mappedLesson);
+      if (quizzes) {
+        let lessonId = currentId;
+        if (mappedQuestions.length > 0 && !lessonId) {
+          if (!mappedLesson.grade_id || !mappedLesson.subject_id || !mappedLesson.title_en) {
+            throw new Error('Grade, subject, and English title are required before importing quiz questions.');
+          }
+          const createdLesson = await createLessonAdmin({
+            ...mappedLesson,
+            status: 'draft',
+            is_approved: userRole === 'admin' ? mappedLesson.is_approved : false,
+          });
+          lessonId = createdLesson.id;
+          setLesson(createdLesson);
+          setCurrentId(createdLesson.id);
+        }
+        if (lessonId) {
+          const insertedQuestions: QuizQuestionDB[] = [];
+          for (const mappedQuestion of mappedQuestions) {
+            const questionToInsert = { ...mappedQuestion, lesson_id: lessonId };
+            const id = await createQuizQuestionAdmin(questionToInsert);
+            insertedQuestions.push({ ...questionToInsert, id } as QuizQuestionDB);
+            setQuestions([...insertedQuestions]);
+          }
+          if (!currentId && lessonId) navigate({ name: 'admin-lesson-edit', id: lessonId });
+        } else {
+          setQuestions([]);
+        }
+      }
       alert('✅ Success! All fields have been perfectly auto-filled!');
       setJsonInput('');
     } catch (error) {

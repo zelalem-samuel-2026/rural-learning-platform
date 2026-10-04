@@ -201,6 +201,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         if (fallbackInput === cleanedInput) throw initialParseError;
         parsed = JSON.parse(fallbackInput);
       }
+      console.log('RAW PARSED JSON FROM CLAUDE:', parsed);
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('Expected a lesson object');
       }
@@ -208,8 +209,19 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       const data = parsed as Record<string, unknown>;
       const asRecord = (value: unknown): Record<string, unknown> =>
         value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-      const basicInfo = asRecord(data.basicInfo);
-      const lessonContent = asRecord(data.lessonContent);
+      const readField = (record: Record<string, unknown>, ...keys: string[]): unknown => {
+        const normalizedKeys = keys.map((key) => key.toLowerCase().replace(/[^a-z0-9]/g, ''));
+        const entry = Object.entries(record).find(([key]) =>
+          normalizedKeys.includes(key.toLowerCase().replace(/[^a-z0-9]/g, '')),
+        );
+        return entry?.[1];
+      };
+      const firstValue = (...values: unknown[]): unknown =>
+        values.find((value) => value !== undefined && value !== null
+          && (typeof value !== 'string' || value.trim() !== ''));
+      const basicInfo = asRecord(readField(data, 'basicInfo'));
+      const source = Object.keys(basicInfo).length > 0 ? basicInfo : data;
+      const lessonContent = asRecord(readField(data, 'lessonContent'));
       const asText = (value: unknown): string =>
         typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
       const asString = (value: unknown, fallback = ''): string =>
@@ -235,7 +247,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         );
         return matchedLabel ? getId(matchedLabel) : '';
       };
-      const rawGrade = basicInfo.grade;
+      const rawGrade = firstValue(readField(source, 'grade'), readField(data, 'grade'));
       const gradeText = asText(rawGrade);
       const requestedGradeNumber = gradeText.match(/\d+/)?.[0];
       const selectedGrade = grades.find((grade) =>
@@ -246,7 +258,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       );
       const gradeId = selectedGrade?.id ?? '';
       const resolvedGradeId = gradeId || lesson.grade_id || '';
-      const subjectText = asText(basicInfo.subject);
+      const subjectText = asText(firstValue(readField(source, 'subject'), readField(data, 'subject')));
       const allSubjects = await fetchSubjects();
       const selectableSubjects = resolvedGradeId === 'grade-7' || resolvedGradeId === 'grade-8'
         ? allSubjects
@@ -261,7 +273,7 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         (subject) => subject.id,
         (subject) => [subject.name.en, subject.name.am],
       );
-      const chapterText = asText(basicInfo.chapter);
+      const chapterText = asText(firstValue(readField(source, 'chapter'), readField(data, 'chapter')));
       const availableChapters = resolvedGradeId && subjectId
         ? await fetchChapters(resolvedGradeId, subjectId)
         : [];
@@ -271,7 +283,10 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
         (chapter) => chapter.id,
         (chapter) => [chapter.title_en, chapter.title_am],
       );
-      const difficultyText = asText(basicInfo.difficultyLevel).toLocaleLowerCase();
+      const difficultyText = asText(firstValue(
+        readField(source, 'difficultyLevel'),
+        readField(data, 'difficultyLevel'),
+      )).toLocaleLowerCase();
       const difficulty = difficultyText === 'beginner' || difficultyText === 'easy'
         ? 'beginner'
         : difficultyText === 'intermediate' || difficultyText === 'medium'
@@ -279,79 +294,135 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
           : difficultyText === 'advanced' || difficultyText === 'hard'
             ? 'advanced'
             : undefined;
-      const rawSections = data.sections ?? lessonContent.sections;
+      const rawSections = firstValue(readField(lessonContent, 'sections'), readField(data, 'sections'));
       const sections = Array.isArray(rawSections) ? rawSections : null;
       const toSections = (language: 'english' | 'amharic'): LessonContentSection[] =>
         (sections ?? []).map((item) => {
           const section = asRecord(item);
-          const heading = asRecord(section.heading);
-          const paragraphs = asRecord(section.paragraphs);
-          const rawParagraphs = paragraphs[language] ?? section[`content${language === 'english' ? 'En' : 'Am'}`];
+          const heading = asRecord(readField(section, 'heading'));
+          const paragraphs = asRecord(readField(section, 'paragraphs', 'content'));
+          const english = language === 'english';
+          const rawParagraphs = firstValue(
+            readField(paragraphs, language, english ? 'en' : 'am'),
+            readField(section, english ? 'contentEn' : 'contentAm'),
+            readField(section, english ? 'paragraphsEn' : 'paragraphsAm'),
+          );
           const text = typeof rawParagraphs === 'string'
             ? [rawParagraphs]
             : asStringArray(rawParagraphs);
           return {
-            type: section.type === 'example' ? 'example' : 'section',
+            type: readField(section, 'type') === 'example' ? 'example' : 'section',
             heading: asString(
-              heading[language] ?? section[`heading${language === 'english' ? 'En' : 'Am'}`],
+              firstValue(
+                readField(heading, language, english ? 'en' : 'am'),
+                readField(section, english ? 'headingEn' : 'headingAm'),
+              ),
             ),
             paragraphs: text,
           };
         });
-      const rawQuizzes = data.quizzes;
+      const rawQuizzes = readField(data, 'quizzes');
       const quizzes = Array.isArray(rawQuizzes) ? rawQuizzes : null;
       const mappedQuestions: Partial<QuizQuestionDB>[] = (quizzes ?? []).map((item, index) => {
         const quiz = asRecord(item);
-        const question = asRecord(quiz.question);
-        const explanation = asRecord(quiz.explanation);
-        const options = asStringArray(quiz.options ?? quiz.optionsEn, ['', '', '', '']);
+        const question = asRecord(readField(quiz, 'question'));
+        const explanation = asRecord(readField(quiz, 'explanation'));
+        const options = asStringArray(firstValue(
+          readField(quiz, 'options'),
+          readField(quiz, 'optionsEn'),
+        ), ['', '', '', '']);
         return {
           lesson_id: currentId ?? '',
-          order: asNumber(quiz.order, index + 1),
+          order: asNumber(readField(quiz, 'order'), index + 1),
           type: 'mc',
-          question_en: asString(question.english ?? quiz.questionEn),
-          question_am: asString(question.amharic ?? quiz.questionAm),
+          question_en: asString(firstValue(readField(question, 'english'), readField(quiz, 'questionEn'))),
+          question_am: asString(firstValue(readField(question, 'amharic'), readField(quiz, 'questionAm'))),
           options_en: options,
-          options_am: asStringArray(quiz.optionsAm, ['', '', '', '']),
-          correct_option_index: asNumber(quiz.correctOptionIndex ?? quiz.correct_option_index, 0),
+          options_am: asStringArray(readField(quiz, 'optionsAm'), ['', '', '', '']),
+          correct_option_index: asNumber(readField(quiz, 'correctOptionIndex', 'correct_option_index'), 0),
           accepted_short_answers: [],
-          explanation_en: asString(explanation.english ?? quiz.explanationEn),
-          explanation_am: asString(explanation.amharic ?? quiz.explanationAm),
+          explanation_en: asString(firstValue(readField(explanation, 'english'), readField(quiz, 'explanationEn'))),
+          explanation_am: asString(firstValue(readField(explanation, 'amharic'), readField(quiz, 'explanationAm'))),
         };
       });
-      const objectives = asRecord(lessonContent.learningObjectives);
-      const parsedObjectives = asRecord(data.objectives);
-      const keyPoints = asRecord(lessonContent.keyPoints ?? data.keyPoints);
-      const basicTitle = asRecord(basicInfo.title);
-      const overview = asRecord(basicInfo.shortOverview);
-      const recap = asRecord(basicInfo.recap);
+      const objectives = asRecord(readField(lessonContent, 'learningObjectives'));
+      const parsedObjectives = asRecord(readField(data, 'objectives'));
+      const keyPoints = asRecord(firstValue(readField(lessonContent, 'keyPoints'), readField(data, 'keyPoints')));
+      const basicTitle = asRecord(readField(source, 'title'));
+      const rootTitle = asRecord(readField(data, 'title'));
+      const overview = asRecord(readField(source, 'shortOverview'));
+      const rawOverview = asRecord(readField(data, 'overview'));
+      const recap = asRecord(readField(source, 'recap'));
+      const rawRecap = asRecord(readField(data, 'recap'));
+      const titleEn = firstValue(
+        readField(source, 'titleEn'),
+        readField(basicTitle, 'english'),
+        readField(data, 'titleEn'),
+        readField(rootTitle, 'english'),
+      );
+      const titleAm = firstValue(
+        readField(source, 'titleAm'),
+        readField(basicTitle, 'amharic'),
+        readField(data, 'titleAm'),
+        readField(rootTitle, 'amharic'),
+      );
 
       const mappedLesson: Partial<LessonDB> = {
         ...lesson,
         grade_id: resolvedGradeId || lesson.grade_id,
         subject_id: subjectId || (resolvedGradeId ? '' : lesson.subject_id),
         chapter_id: chapterId || null,
-        order: asNumber(basicInfo.orderNumber, lesson.order ?? 1),
+        order: asNumber(firstValue(readField(source, 'orderNumber'), readField(data, 'orderNumber')), lesson.order ?? 1),
         difficulty: difficulty ?? lesson.difficulty,
-        duration_min: asNumber(basicInfo.durationMinutes, 35),
-        title_en: asString(basicTitle.english ?? basicInfo.titleEn, lesson.title_en),
-        title_am: asString(basicTitle.amharic ?? basicInfo.titleAm, lesson.title_am),
-        overview_en: asString(overview.english ?? asRecord(data.overview).en ?? basicInfo.overviewEn, lesson.overview_en),
-        overview_am: asString(overview.amharic ?? asRecord(data.overview).am ?? basicInfo.overviewAm, lesson.overview_am),
-        recap_en: asString(recap.english ?? asRecord(data.recap).en ?? basicInfo.recapEn, lesson.recap_en),
-        recap_am: asString(recap.amharic ?? asRecord(data.recap).am ?? basicInfo.recapAm, lesson.recap_am),
+        duration_min: asNumber(firstValue(readField(source, 'durationMinutes'), readField(data, 'durationMinutes')), 35),
+        title_en: asString(titleEn, lesson.title_en),
+        title_am: asString(titleAm, lesson.title_am),
+        overview_en: asString(firstValue(
+          readField(rawOverview, 'en', 'english'),
+          readField(overview, 'english'),
+          readField(source, 'overviewEn'),
+        ), lesson.overview_en),
+        overview_am: asString(firstValue(
+          readField(rawOverview, 'am', 'amharic'),
+          readField(overview, 'amharic'),
+          readField(source, 'overviewAm'),
+        ), lesson.overview_am),
+        recap_en: asString(firstValue(
+          readField(rawRecap, 'en', 'english'),
+          readField(recap, 'english'),
+          readField(source, 'recapEn'),
+        ), lesson.recap_en),
+        recap_am: asString(firstValue(
+          readField(rawRecap, 'am', 'amharic'),
+          readField(recap, 'amharic'),
+          readField(source, 'recapAm'),
+        ), lesson.recap_am),
         objectives_en: asStringArray(
-          objectives.english ?? lessonContent.objectivesEn ?? parsedObjectives.en,
+          firstValue(
+            readField(objectives, 'english'),
+            readField(lessonContent, 'objectivesEn'),
+            readField(parsedObjectives, 'en', 'english'),
+          ),
           lesson.objectives_en,
         ),
         objectives_am: asStringArray(
-          objectives.amharic ?? lessonContent.objectivesAm ?? parsedObjectives.am,
+          firstValue(
+            readField(objectives, 'amharic'),
+            readField(lessonContent, 'objectivesAm'),
+            readField(parsedObjectives, 'am', 'amharic'),
+          ),
           lesson.objectives_am,
         ),
         content_en: sections ? toSections('english') : lesson.content_en,
         content_am: sections ? toSections('amharic') : lesson.content_am,
-        key_points_en: asStringArray(keyPoints.english ?? keyPoints.en ?? lessonContent.keyPointsEn, lesson.key_points_en),
-        key_points_am: asStringArray(keyPoints.amharic ?? keyPoints.am ?? lessonContent.keyPointsAm, lesson.key_points_am),
+        key_points_en: asStringArray(firstValue(
+          readField(keyPoints, 'english', 'en'),
+          readField(lessonContent, 'keyPointsEn'),
+        ), lesson.key_points_en),
+        key_points_am: asStringArray(firstValue(
+          readField(keyPoints, 'amharic', 'am'),
+          readField(lessonContent, 'keyPointsAm'),
+        ), lesson.key_points_am),
       };
       setLesson(mappedLesson);
       if (quizzes) {

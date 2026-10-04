@@ -133,9 +133,74 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
 
   const handleAutoFillFromJSON = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    if (!jsonInput.trim()) {
+      alert('Please paste JSON first.');
+      return;
+    }
+
+    const sanitizeJson = (input: string): string => {
+      const source = input.replace(/```(?:json)?/gi, '').replace(/^\uFEFF/, '').trim();
+      let result = '';
+      let inString = false;
+      let escaped = false;
+
+      for (let i = 0; i < source.length; i += 1) {
+        const char = source[i];
+        const code = char.charCodeAt(0);
+
+        if (inString) {
+          if (escaped) {
+            result += char;
+            escaped = false;
+          } else if (char === '\\') {
+            result += char;
+            escaped = true;
+          } else if (char === '"') {
+            let next = i + 1;
+            while (next < source.length && /\s/.test(source[next])) next += 1;
+            const nextChar = source[next];
+            const closesString = next === source.length
+              || nextChar === ':' || nextChar === '}' || nextChar === ']'
+              || (nextChar === ',' && /^,\s*(?:"|[{\[\d-]|true\b|false\b|null\b)/.test(source.slice(i + 1)));
+            if (closesString) {
+              result += char;
+              inString = false;
+            } else {
+              result += '\\"';
+            }
+          } else if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) {
+            if (char === '\n' || char === '\r') {
+              if (char === '\r' && source[i + 1] === '\n') i += 1;
+              result += '\\n';
+            } else if (char === '\t') {
+              result += '\\t';
+            }
+          } else {
+            result += char;
+          }
+        } else if (char === '"') {
+          result += char;
+          inString = true;
+        } else if ((code < 0x20 && !/\s/.test(char)) || (code >= 0x7f && code <= 0x9f)) {
+          continue;
+        } else {
+          result += char;
+        }
+      }
+
+      return result.trim();
+    };
+
+    let parsed: unknown;
     try {
-      const cleanedInput = jsonInput.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const parsed: unknown = JSON.parse(cleanedInput);
+      const cleanedInput = sanitizeJson(jsonInput);
+      try {
+        parsed = JSON.parse(cleanedInput);
+      } catch (initialParseError) {
+        const fallbackInput = cleanedInput.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+        if (fallbackInput === cleanedInput) throw initialParseError;
+        parsed = JSON.parse(fallbackInput);
+      }
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
         throw new Error('Expected a lesson object');
       }
@@ -320,8 +385,13 @@ export function AdminLessonEditorPage({ route, navigate, lessonId, userRole }: A
       alert('✅ Success! All fields have been perfectly auto-filled!');
       setJsonInput('');
     } catch (error) {
-      console.error(error);
-      alert('❌ Invalid JSON or Mapping Error. Please check console.');
+      if (error instanceof SyntaxError) {
+        console.error('JSON Syntax Parse Error:', error);
+        alert('❌ Invalid JSON Syntax: The pasted text is not valid JSON. Please ensure the full JSON output is complete and not cut off.');
+        return;
+      }
+      console.error('JSON Import Mapping Error:', error);
+      alert('❌ Error mapping data to lesson fields. Check the browser console for details.');
     }
   };
 

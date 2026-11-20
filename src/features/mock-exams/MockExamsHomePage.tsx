@@ -195,7 +195,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
                   <div className="grid grid-cols-2 gap-2 py-3 px-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl mb-6 text-xs text-gray-600 dark:text-gray-300 font-medium">
                     <div className="flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-blue-500" />
-                      <span>{exam.total_questions} ጥያቄዎች</span>
+                      <span>{exam.total_questions ?? 0} ጥያቄዎች</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Clock className="w-4 h-4 text-amber-500" />

@@ -12,7 +12,7 @@ interface AdminMockExamEditorPageProps {
   userRole?: string | null;
 }
 
-type QuestionDraft = Omit<PracticeExamQuestion, 'id' | 'exam_id' | 'created_at' | 'is_approved'> & { id?: string };
+type QuestionDraft = Omit<PracticeExamQuestion, 'id' | 'exam_id' | 'created_at'> & { id?: string };
 type ExamFormData = Pick<PracticeExam, 'title_am' | 'title_en' | 'grade_id' | 'subject_id' | 'chapter_id' | 'recommended_minutes' | 'max_minutes' | 'status'>;
 
 const emptyQuestion = (question_order: number): QuestionDraft => ({
@@ -318,7 +318,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
     let metadataSaved = false;
     let questionsSaved = false;
     try {
-      const examData = { ...formData, total_questions: questions.length };
+      const examData = { ...formData };
       let savedExam: PracticeExam;
       if (exam) {
         savedExam = metadataEditable
@@ -369,12 +369,8 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
       setSavedQuestionIds(questionsWithIds.flatMap((question) => question.id ? [question.id] : []));
       questionsSaved = true;
 
-      if (formData.status === 'published' &&
-          (userRole === 'admin' || savedExam.is_approved !== true || newQuestions.length > 0)) {
-        savedExam = await mockExamService.setExamApproval(savedExam.id, true);
-      }
       const savedQuestions = await mockExamService.getQuestionsByExamId(savedExam.id);
-      setExam(savedExam);
+      setExam({ ...savedExam, total_questions: savedQuestions.length });
       setQuestions(savedQuestions.map(({ id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation, question_order }) => ({
         id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation: explanation || '', question_order,
       })));
@@ -388,7 +384,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
       console.error('Error saving exam and questions:', error);
       const savedState = metadataSaved
         ? questionsSaved
-          ? 'Exam and question data were saved, but approval or final verification failed. '
+          ? 'Exam and question data were saved, but final verification failed. '
           : 'Exam details were saved, but question changes may be incomplete. '
         : '';
       setMessage(`${savedState}Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

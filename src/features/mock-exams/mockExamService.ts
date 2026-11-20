@@ -7,6 +7,26 @@ const newestFirst = (exams: PracticeExam[]) => [...exams].sort((a, b) => {
   return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
 });
 
+const addQuestionCounts = async (exams: PracticeExam[]): Promise<PracticeExam[]> => {
+  if (exams.length === 0) return exams;
+
+  const { data, error } = await supabase
+    .from('practice_exam_questions')
+    .select('exam_id')
+    .in('exam_id', exams.map((exam) => exam.id));
+
+  if (error) {
+    console.error('Error fetching Mock Exam question counts:', error);
+    throw error;
+  }
+
+  const counts = new Map<string, number>();
+  (data || []).forEach(({ exam_id }) => {
+    counts.set(exam_id, (counts.get(exam_id) || 0) + 1);
+  });
+  return exams.map((exam) => ({ ...exam, total_questions: counts.get(exam.id) || 0 }));
+};
+
 export const mockExamService = {
   // ----------------------------------------------------
   // EXAMS CRUD
@@ -21,7 +41,7 @@ export const mockExamService = {
       console.error('Error fetching exams:', error);
       throw error;
     }
-    return newestFirst(data || []);
+    return newestFirst(await addQuestionCounts(data || []));
   },
 
   async getAllExamsForAdmin(): Promise<PracticeExam[]> {
@@ -33,7 +53,7 @@ export const mockExamService = {
       console.error('Error fetching admin exams:', error);
       throw error;
     }
-    return newestFirst(data || []);
+    return newestFirst(await addQuestionCounts(data || []));
   },
 
   async getExamById(id: string): Promise<PracticeExam | null> {
@@ -41,7 +61,7 @@ export const mockExamService = {
       .from('practice_exams')
       .select('*')
       .eq('id', id)
-      .eq('is_approved', true)
+      .eq('status', 'published')
       .maybeSingle();
 
     if (error) {
@@ -65,10 +85,10 @@ export const mockExamService = {
     return data;
   },
 
-  async createExam(examData: Omit<PracticeExam, 'id' | 'created_at'>): Promise<PracticeExam> {
+  async createExam(examData: Omit<PracticeExam, 'id' | 'created_at' | 'total_questions'>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
-      .insert([{ ...examData, is_approved: false }])
+      .insert([examData])
       .select()
       .single();
 
@@ -79,7 +99,7 @@ export const mockExamService = {
     return data;
   },
 
-  async updateExam(id: string, examData: Partial<PracticeExam>): Promise<PracticeExam> {
+  async updateExam(id: string, examData: Partial<Omit<PracticeExam, 'total_questions'>>): Promise<PracticeExam> {
     const { data, error } = await supabase
       .from('practice_exams')
       .update(examData)
@@ -92,27 +112,6 @@ export const mockExamService = {
       throw error;
     }
     return data;
-  },
-
-  async setExamApproval(id: string, isApproved: boolean): Promise<PracticeExam> {
-    if (isApproved) {
-      const { error: questionsError } = await supabase
-        .from('practice_exam_questions')
-        .update({ is_approved: true })
-        .eq('exam_id', id);
-      if (questionsError) throw questionsError;
-    }
-
-    const updatedExam = await this.updateExam(id, { is_approved: isApproved });
-
-    if (!isApproved) {
-      const { error: questionsError } = await supabase
-        .from('practice_exam_questions')
-        .update({ is_approved: false })
-        .eq('exam_id', id);
-      if (questionsError) throw questionsError;
-    }
-    return updatedExam;
   },
 
   async deleteExam(id: string): Promise<void> {
@@ -145,9 +144,10 @@ export const mockExamService = {
   },
 
   async createQuestion(questionData: Omit<PracticeExamQuestion, 'id' | 'created_at'>, isApproved = false): Promise<PracticeExamQuestion> {
+    void isApproved;
     const { data, error } = await supabase
       .from('practice_exam_questions')
-      .insert([{ ...questionData, is_approved: isApproved }])
+      .insert([questionData])
       .select()
       .single();
 
@@ -160,10 +160,11 @@ export const mockExamService = {
 
   async addQuestions(questionData: Omit<PracticeExamQuestion, 'id' | 'created_at'>[], isApproved = false): Promise<PracticeExamQuestion[]> {
     if (questionData.length === 0) return [];
+    void isApproved;
 
     const { data, error } = await supabase
       .from('practice_exam_questions')
-      .insert(questionData.map((question) => ({ ...question, is_approved: isApproved })))
+      .insert(questionData)
       .select();
 
     if (error) {

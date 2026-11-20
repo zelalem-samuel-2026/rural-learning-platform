@@ -3,7 +3,7 @@ import { mockExamService } from '@/features/mock-exams/mockExamService';
 import { PracticeExam } from '@/features/mock-exams/types';
 import type { Route } from '@/lib/types';
 import {
-  Plus, Clock, BookOpen, Trash2, CheckCircle2,
+  Plus, Clock, BookOpen, Trash2,
   ArrowLeft, FileQuestion
 } from 'lucide-react';
 
@@ -43,15 +43,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       fetchExams();
     } catch (err: any) {
       alert(`ማጥፋት አልተሳካም፦ ${err.message}`);
-    }
-  };
-
-  const handleApproval = async (exam: PracticeExam) => {
-    try {
-      const updatedExam = await mockExamService.setExamApproval(exam.id, exam.is_approved !== true);
-      setExams((prev) => prev.map((item) => item.id === updatedExam.id ? updatedExam : item));
-    } catch (err: any) {
-      alert(`ማጽደቅ አልተሳካም፦ ${err.message}`);
     }
   };
 
@@ -161,13 +152,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
                 >
                   <Trash2 className="w-4 h-4"/>
-                </button>}
-                {userRole === 'admin' && <button
-                  onClick={() => handleApproval(exam)}
-                  className="p-2 rounded-lg hover:bg-green-50 text-gray-500 hover:text-green-600"
-                  aria-label={exam.is_approved ? 'Disapprove' : 'Approve'}
-                >
-                  <CheckCircle2 className="w-5 h-5"/>
                 </button>}
               </div>
             </div>

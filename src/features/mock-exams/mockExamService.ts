@@ -154,6 +154,21 @@ export const mockExamService = {
     return data;
   },
 
+  async addQuestions(questionData: Omit<PracticeExamQuestion, 'id' | 'created_at'>[], isApproved = false): Promise<PracticeExamQuestion[]> {
+    if (questionData.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('practice_exam_questions')
+      .insert(questionData.map((question) => ({ ...question, is_approved: isApproved })))
+      .select();
+
+    if (error) {
+      console.error('Error adding questions:', error);
+      throw error;
+    }
+    return data || [];
+  },
+
   async updateQuestion(id: string, questionData: Partial<PracticeExamQuestion>): Promise<PracticeExamQuestion> {
     const { data, error } = await supabase
       .from('practice_exam_questions')

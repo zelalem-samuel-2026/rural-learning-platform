@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { mockExamService } from '@/features/mock-exams/mockExamService';
 import { PracticeExam } from '@/features/mock-exams/types';
-import type { Route, GradeId, Chapter, Subject } from '@/lib/types';
-import { supabase } from '@/lib/supabase';
-import { fetchSubjectsForGrade } from '@/lib/helpers';
+import type { Route } from '@/lib/types';
 import {
-  Plus, Clock, BookOpen, Trash2, Edit3, CheckCircle2,
-  ArrowLeft, X, Save, FileQuestion, Layers 
+  Plus, Clock, BookOpen, Trash2, CheckCircle2,
+  ArrowLeft, FileQuestion
 } from 'lucide-react';
 
 interface AdminMockExamsPageProps {
@@ -17,91 +15,11 @@ interface AdminMockExamsPageProps {
 
 export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate, userRole }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [showFormModal, setShowFormModal] = useState<boolean>(false);
-  const [editingExam, setEditingExam] = useState<PracticeExam | null>(null);
-
-  // Form State
-  const [formData, setFormData] = useState({
-    title_am: '',
-    title_en: '',
-    grade_id: 'grade-5' as GradeId,
-    subject_id: '',
-    chapter_id: '',
-    recommended_minutes: 60,
-    max_minutes: 120,
-    status: 'draft' as 'draft' | 'published',
-  });
-
-  const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
     fetchExams();
   }, []);
-
-  useEffect(() => {
-    let active = true;
-    fetchSubjectsForGrade(formData.grade_id)
-      .then((gradeSubjects) => {
-        if (!active) return;
-        setSubjects(gradeSubjects);
-        setFormData((prev) => {
-          const selectedSubjectIsValid = gradeSubjects.some((subject) => subject.id === prev.subject_id);
-          return {
-            ...prev,
-            subject_id: selectedSubjectIsValid ? prev.subject_id : gradeSubjects[0]?.id || '',
-            chapter_id: selectedSubjectIsValid ? prev.chapter_id : '',
-          };
-        });
-      })
-      .catch((err) => {
-        console.error('Error fetching subjects for grade:', err);
-        if (active) {
-          setSubjects([]);
-          setFormData((prev) => ({ ...prev, subject_id: '', chapter_id: '' }));
-        }
-      });
-    return () => { active = false; };
-  }, [formData.grade_id]);
-
-  useEffect(() => {
-    let active = true;
-    if (!formData.grade_id || !formData.subject_id) {
-      setChapters([]);
-      setFormData((prev) => ({ ...prev, chapter_id: '' }));
-      return () => { active = false; };
-    }
-    const loadChapters = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('chapters')
-          .select('*')
-          .eq('grade_id', formData.grade_id)
-          .eq('subject_id', formData.subject_id)
-          .order('order', { ascending: true });
-        if (error) throw error;
-        if (!active) return;
-        const matchingChapters = data || [];
-        setChapters(matchingChapters);
-        setFormData((prev) => ({
-          ...prev,
-          chapter_id: matchingChapters.some((chapter) => chapter.id === prev.chapter_id)
-            ? prev.chapter_id
-            : matchingChapters[0]?.id || '',
-        }));
-      } catch (err) {
-        console.error('Error fetching chapters for grade and subject:', err);
-        if (active) {
-          setChapters([]);
-          setFormData((prev) => ({ ...prev, chapter_id: '' }));
-        }
-      }
-    };
-    loadChapters();
-    return () => { active = false; };
-  }, [formData.grade_id, formData.subject_id]);
 
   const fetchExams = async () => {
     setLoading(true);
@@ -112,77 +30,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
       console.error('Failed to load exams:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleOpenCreateModal = () => {
-    setEditingExam(null);
-    setFormData({
-      title_am: '',
-      title_en: '',
-      grade_id: 'grade-5',
-      subject_id: '',
-      chapter_id: '',
-      recommended_minutes: 60,
-      max_minutes: 120,
-      status: 'draft',
-    });
-    setShowFormModal(true);
-  };
-
-  const handleOpenEditModal = (exam: PracticeExam) => {
-    setEditingExam(exam);
-    setFormData({
-      title_am: exam.title_am,
-      title_en: exam.title_en,
-      grade_id: exam.grade_id,
-      subject_id: exam.subject_id,
-      chapter_id: exam.chapter_id || '',
-      recommended_minutes: exam.recommended_minutes,
-      max_minutes: exam.max_minutes,
-      status: exam.status,
-    });
-    setShowFormModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title_am || !formData.title_en) {
-      alert('እባክዎን የፈተናውን ስም በአማርኛ እና በእንግሊዝኛ ያስገቡ!');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      if (editingExam) {
-        await mockExamService.updateExam(editingExam.id, formData);
-        if (userRole === 'admin' && formData.status === 'published') {
-          await mockExamService.setExamApproval(editingExam.id, true);
-        }
-        alert('ፈተናው በስኬት ተሻሽሏል!');
-        setShowFormModal(false);
-        await fetchExams();
-      } else {
-        let newExam = await mockExamService.createExam(formData);
-        if (userRole === 'admin' && formData.status === 'published') {
-          newExam = await mockExamService.setExamApproval(newExam.id, true);
-        }
-        setExams((prev) => [newExam, ...prev.filter((exam) => exam.id !== newExam.id)]);
-        await fetchExams();
-        alert('አዲስ ፈተና በስኬት ተፈጥሯል!');
-        setShowFormModal(false);
-        
-        const examId = newExam?.id || (Array.isArray(newExam) && newExam[0]?.id);
-        if (examId) {
-          navigate({ name: 'admin-mock-exam-edit', id: examId });
-        } else {
-          await fetchExams();
-        }
-      }
-    } catch (err: any) {
-      alert(`ስህተት ተፈጥሯል፦ ${err.message || 'አልተሳካም'}`);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -237,7 +84,7 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         </div>
 
         <button
-          onClick={handleOpenCreateModal}
+          onClick={() => navigate({ name: 'admin-mock-exam-edit' })}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all shrink-0"
         >
           <Plus className="w-5 h-5"/>
@@ -269,10 +116,12 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                     className={`px-3 py-1 rounded-full text-xs font-bold ${
                       exam.status === 'published'
                         ? 'bg-green-100 text-green-800 dark:bg-green-950/50 dark:text-green-300'
-                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300'
+                        : exam.status === 'archived'
+                          ? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/50 dark:text-yellow-300'
                     }`}
                   >
-                    {exam.status === 'published' ? 'Published' : 'Draft'}
+                    {exam.status === 'published' ? 'Published' : exam.status === 'archived' ? 'Archived' : 'Draft'}
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md">
                     {getGradeLabel(exam.grade_id)}
@@ -298,14 +147,8 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
                   className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <FileQuestion className="w-4 h-4"/>
-                  ጥያቄዎች
+                  Edit exam &amp; questions
                 </button>
-                {userRole === 'admin' && <button
-                  onClick={() => handleOpenEditModal(exam)}
-                  className="p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded-lg"
-                >
-                  <Edit3 className="w-4 h-4"/>
-                </button>}
                 {userRole === 'admin' && <button
                   onClick={() => handleDelete(exam.id)}
                   className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg"
@@ -325,167 +168,6 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         </div>
       )}
 
-      {showFormModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700 mb-5">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                {editingExam ? 'ፈተና ማስተካከያ' : 'አዲስ ፈተና መፍጠሪያ (በዩኒት)'}
-              </h3>
-              <button
-                onClick={() => setShowFormModal(false)}
-                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <X className="w-5 h-5"/>
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  የፈተናው ርዕስ (በአማርኛ) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="ምሳሌ፦ ዩኒት 1፡ የቁጥር ስርዓቶች ፈተና"
-                  value={formData.title_am}
-                  onChange={(e) => setFormData({ ...formData, title_am: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                  የፈተናው ርዕስ (በእንግሊዝኛ) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Unit 1: Number Systems Exam"
-                  value={formData.title_en}
-                  onChange={(e) => setFormData({ ...formData, title_en: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ክፍል</label>
-                  <select
-                    value={formData.grade_id}
-                    onChange={(e) => setFormData({ ...formData, grade_id: e.target.value as GradeId, chapter_id: '' })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                  >
-                    <option value="grade-5">5ኛ ክፍል</option>
-                    <option value="grade-6">6ኛ ክፍል</option>
-                    <option value="grade-7">7ኛ ክፍል</option>
-                    <option value="grade-8">8ኛ ክፍል</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ትምህርት (Subject)</label>
-                  <select
-                    value={formData.subject_id}
-                    onChange={(e) => setFormData({ ...formData, subject_id: e.target.value })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                  >
-                    {subjects.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
-                        {sub.name.am || sub.name.en} ({sub.name.en})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1">
-                  <Layers className="w-4 h-4 text-blue-500"/>
-                  ምዕራፍ/ዩኒት (Chapter / Unit) *
-                </label>
-                <select
-                  required
-                  value={formData.chapter_id}
-                  onChange={(e) => setFormData({ ...formData, chapter_id: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                >
-                  {chapters.length === 0 ? (
-                    <option value="">ለዚህ ትምህርት የተመዘገበ ዩኒት የለም</option>
-                  ) : (
-                    chapters.map((ch) => (
-                      <option key={ch.id} value={ch.id}>
-                        {ch.title_am} ({ch.title_en})
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                    የሚመከር ሰዓት (ደቂቃ)
-                  </label>
-                  <input
-                    type="number"
-                    min="10"
-                    max="300"
-                    value={formData.recommended_minutes}
-                    onChange={(e) => setFormData({ ...formData, recommended_minutes: Number(e.target.value) })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                    ከፍተኛው ሰዓት (ደቂቃ)
-                  </label>
-                  <input
-                    type="number"
-                    min="10"
-                    max="300"
-                    value={formData.max_minutes}
-                    onChange={(e) => setFormData({ ...formData, max_minutes: Number(e.target.value) })}
-                    className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ሁኔታ (Status)</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'draft' | 'published' })}
-                  className="w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white"
-                >
-                  <option value="draft">ረቂቅ (Draft) - ተማሪዎች አያዩትም</option>
-                  <option value="published">የተለቀቀ (Published) - ተማሪዎች ይፈተኑበታል</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => setShowFormModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"
-                >
-                  ሰርዝ
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm disabled:opacity-50"
-                >
-                  <Save className="w-4 h-4"/>
-                  {saving ? 'እየተቀመጠ ነው...' : 'አስቀምጥ'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

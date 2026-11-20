@@ -103,7 +103,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
     chapter_id: '',
     recommended_minutes: 60,
     max_minutes: 120,
-    status: 'draft',
+    status: 'published',
   });
   const metadataEditable = !exam || userRole === 'admin';
   const inputClass = 'w-full p-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-white disabled:opacity-60';
@@ -253,7 +253,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
           !Number.isFinite(max_minutes) || max_minutes <= 0) {
         throw new Error('Recommended and maximum minutes must be positive numbers.');
       }
-      const rawStatus = nonEmptyString(valueFor(data, 'status', 'type') ?? 'draft').toLowerCase();
+      const rawStatus = nonEmptyString(valueFor(data, 'status', 'type') ?? 'published').toLowerCase();
       if (!['draft', 'published', 'archived'].includes(rawStatus)) {
         throw new Error('Status must be draft, published, or archived.');
       }

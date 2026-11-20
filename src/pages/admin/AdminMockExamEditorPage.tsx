@@ -316,6 +316,7 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
     setSaving(true);
     setMessage('');
     let metadataSaved = false;
+    let questionsSaved = false;
     try {
       const examData = { ...formData, total_questions: questions.length };
       let savedExam: PracticeExam;
@@ -366,8 +367,10 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
         if (!retainedIds.has(id)) await mockExamService.deleteQuestion(id);
       }
       setSavedQuestionIds(questionsWithIds.flatMap((question) => question.id ? [question.id] : []));
+      questionsSaved = true;
 
-      if (userRole === 'admin' && formData.status === 'published') {
+      if (formData.status === 'published' &&
+          (userRole === 'admin' || savedExam.is_approved !== true || newQuestions.length > 0)) {
         savedExam = await mockExamService.setExamApproval(savedExam.id, true);
       }
       const savedQuestions = await mockExamService.getQuestionsByExamId(savedExam.id);
@@ -376,10 +379,19 @@ export const AdminMockExamEditorPage: React.FC<AdminMockExamEditorPageProps> = (
         id, question_text, option_a, option_b, option_c, option_d, correct_answer, explanation: explanation || '', question_order,
       })));
       setSavedQuestionIds(savedQuestions.map((question) => question.id));
-      setMessage('Exam and questions saved successfully.');
+      setMessage(formData.status === 'draft'
+        ? 'Exam and questions saved as a draft. Publish the exam to make it visible to students.'
+        : formData.status === 'archived'
+          ? 'Exam and questions saved. Archived exams are hidden from students.'
+          : 'Exam and questions saved successfully.');
     } catch (error) {
       console.error('Error saving exam and questions:', error);
-      setMessage(`${metadataSaved ? 'Exam details were saved, but some question changes may not have been saved. ' : ''}Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const savedState = metadataSaved
+        ? questionsSaved
+          ? 'Exam and question data were saved, but approval or final verification failed. '
+          : 'Exam details were saved, but question changes may be incomplete. '
+        : '';
+      setMessage(`${savedState}Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }

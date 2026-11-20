@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { mockExamService } from './mockExamService';
 import { PracticeExam } from './types';
 import type { Route, GradeId, Subject } from '@/lib/types';
@@ -16,6 +16,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [exams, setExams] = useState<PracticeExam[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
 
   // 1. ለተመረጠው ክፍል የተመደቡ ትምህርቶችን መጫን
   useEffect(() => {
@@ -31,13 +32,9 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
     return () => { active = false; };
   }, [selectedGrade]);
 
-  // 2. የተመረጠው ክፍል ሲቀየር የፈተናዎችን ዝርዝር ማምጣት
-  useEffect(() => {
-    fetchPublishedExams();
-  }, [selectedGrade]);
-
-  const fetchPublishedExams = async () => {
+  const fetchPublishedExams = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const allExams = await mockExamService.getAllExams();
       // የሚታዩት 'published' የሆኑ እና ከተመረጠው ክፍል ጋር የሚመሳሰሉ ብቻ ናቸው
@@ -47,10 +44,17 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
       setExams(published);
     } catch (err) {
       console.error('Error fetching exams:', err);
+      setLoadError(err instanceof Error ? err.message : 'Unable to load Mock Exams.');
+      setExams([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGrade]);
+
+  // 2. የተመረጠው ክፍል ሲቀየር የፈተናዎችን ዝርዝር ማምጣት
+  useEffect(() => {
+    fetchPublishedExams();
+  }, [fetchPublishedExams]);
 
   // ክፍሎች (5ኛ፣ 6ኛ፣ 7ኛ፣ 8ኛ)
   const gradesList: { id: GradeId; label: string }[] = [
@@ -145,6 +149,11 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
         <div className="py-16 text-center">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-sm text-gray-500 font-medium">ፈተናዎች እየተጫኑ ነው...</p>
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="bg-red-50 dark:bg-red-950/30 rounded-3xl p-8 text-center border border-red-200 dark:border-red-900 my-4 text-red-800 dark:text-red-200">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3" />
+          Could not load Mock Exams: {loadError}
         </div>
       ) : displayedExams.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-3xl p-12 text-center border border-dashed border-gray-300 dark:border-gray-700 my-4">

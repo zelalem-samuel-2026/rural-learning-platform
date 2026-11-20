@@ -1,6 +1,12 @@
 import { supabase } from '@/lib/supabase';
 import { PracticeExam, PracticeExamQuestion, PracticeExamAttempt } from './types';
 
+const newestFirst = (exams: PracticeExam[]) => [...exams].sort((a, b) => {
+  const aTime = a.created_at ? Date.parse(a.created_at) : 0;
+  const bTime = b.created_at ? Date.parse(b.created_at) : 0;
+  return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+});
+
 export const mockExamService = {
   // ----------------------------------------------------
   // EXAMS CRUD
@@ -9,27 +15,25 @@ export const mockExamService = {
     const { data, error } = await supabase
       .from('practice_exams')
       .select('*')
-      .eq('status', 'published')
-      .order('created_at', { ascending: false });
+      .eq('status', 'published');
 
     if (error) {
       console.error('Error fetching exams:', error);
-      return [];
+      throw error;
     }
-    return data || [];
+    return newestFirst(data || []);
   },
 
   async getAllExamsForAdmin(): Promise<PracticeExam[]> {
     const { data, error } = await supabase
       .from('practice_exams')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
 
     if (error) {
       console.error('Error fetching admin exams:', error);
       throw error;
     }
-    return data || [];
+    return newestFirst(data || []);
   },
 
   async getExamById(id: string): Promise<PracticeExam | null> {
@@ -42,7 +46,7 @@ export const mockExamService = {
 
     if (error) {
       console.error('Error fetching exam by id:', error);
-      return null;
+      throw error;
     }
     return data;
   },
@@ -135,7 +139,7 @@ export const mockExamService = {
 
     if (error) {
       console.error('Error fetching questions:', error);
-      return [];
+      throw error;
     }
     return data || [];
   },

@@ -16,6 +16,7 @@ interface AdminMockExamsPageProps {
 export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate, userRole }) => {
   const [exams, setExams] = useState<PracticeExam[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     fetchExams();
@@ -23,11 +24,13 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
 
   const fetchExams = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const data = await mockExamService.getAllExamsForAdmin();
       setExams(data || []);
     } catch (err) {
       console.error('Failed to load exams:', err);
+      setLoadError(err instanceof Error ? err.message : 'Unable to load Mock Exams.');
     } finally {
       setLoading(false);
     }
@@ -96,6 +99,10 @@ export const AdminMockExamsPage: React.FC<AdminMockExamsPageProps> = ({ navigate
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-gray-500 font-medium">ፈተናዎች እየተጫኑ ነው...</p>
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="text-center py-16 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200">
+          Could not load Mock Exams: {loadError}
         </div>
       ) : exams.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700">

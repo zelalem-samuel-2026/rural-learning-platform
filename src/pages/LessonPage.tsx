@@ -219,6 +219,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             section={section}
             index={i}
             highlightGradeFiveMath={lesson.grade_id === 'grade-5' && /math|ሒሳብ/i.test(lesson.subject_id)}
+            highlightGradeFiveScience={lesson.grade_id === 'grade-5' && /science|አካባቢ/i.test(lesson.subject_id)}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -286,11 +287,12 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
   highlightGradeFiveMath: boolean;
+  highlightGradeFiveScience: boolean;
 }) {
   const isExample = section.type === 'example';
   return (
@@ -306,15 +308,27 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath }: {
       )}
       <h3 className="font-bold text-ink-900 text-lg mb-3">{section.heading}</h3>
       {section.paragraphs.flatMap((paragraph, paragraphIndex) => {
-        const blocks = highlightGradeFiveMath ? splitIdeaBlocks(paragraph) : [{ text: paragraph, marker: false }];
+        const blocks = highlightGradeFiveMath
+          ? splitIdeaBlocks(paragraph).map((block) => ({ ...block, science: false }))
+          : highlightGradeFiveScience
+            ? splitScienceBlocks(paragraph)
+            : [{ text: paragraph, marker: false, science: false }];
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
-              block.marker ? 'mt-5 first:mt-0 rounded-lg border-l-4 border-primary-300 bg-primary-50/60 px-4 py-3' : ''
+              block.marker
+                ? `mt-5 first:mt-0 rounded-lg border-l-4 px-4 py-3 ${
+                  block.science ? 'border-emerald-300 bg-emerald-50/60' : 'border-primary-300 bg-primary-50/60'
+                }`
+                : ''
             }`}
           >
-            {block.marker ? renderIdeaBlock(block.text) : block.text}
+            {block.science
+              ? renderScienceBlock(block.text)
+              : block.marker
+                ? renderIdeaBlock(block.text)
+                : block.text}
           </p>
         ));
       })}
@@ -363,6 +377,55 @@ function renderIdeaBlock(text: string) {
         {afterEmoji.slice(labelStart, labelEnd)}
       </strong>
       {afterEmoji.slice(labelEnd)}
+    </>
+  );
+}
+
+function splitScienceBlocks(paragraph: string): { text: string; marker: boolean; science: boolean }[] {
+  const starts: number[] = [];
+  const addMatches = (pattern: RegExp) => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(paragraph)) !== null) {
+      const index = match.index;
+      if (index === 0 || /\s/.test(paragraph[index - 1])) starts.push(index);
+    }
+  };
+  addMatches(/\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu);
+  addMatches(/•/g);
+  addMatches(/\d+\.\s+/g);
+  starts.sort((a, b) => a - b);
+  const uniqueStarts = starts.filter((start, index) => index === 0 || start !== starts[index - 1]);
+
+  if (uniqueStarts.length === 0) return [{ text: paragraph, marker: false, science: false }];
+
+  const blocks: { text: string; marker: boolean; science: boolean }[] = [];
+  if (uniqueStarts[0] > 0) {
+    blocks.push({ text: paragraph.slice(0, uniqueStarts[0]), marker: false, science: false });
+  }
+  uniqueStarts.forEach((start, index) => {
+    const end = uniqueStarts[index + 1] ?? paragraph.length;
+    blocks.push({ text: paragraph.slice(start, end), marker: true, science: true });
+  });
+  return blocks;
+}
+
+function renderScienceBlock(text: string) {
+  const labelEnd = text.indexOf('፦');
+  if (labelEnd >= 0 && labelEnd < 64 && !/[።.!?\n]/.test(text.slice(0, labelEnd))) {
+    return (
+      <>
+        <strong className="underline decoration-emerald-600 underline-offset-2">{text.slice(0, labelEnd + 1)}</strong>
+        {text.slice(labelEnd + 1)}
+      </>
+    );
+  }
+
+  const marker = text.match(/^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*|\d+\.\s+|•)/u);
+  if (!marker) return text;
+  return (
+    <>
+      <strong className="underline decoration-emerald-600 underline-offset-2">{marker[0]}</strong>
+      {text.slice(marker[0].length)}
     </>
   );
 }

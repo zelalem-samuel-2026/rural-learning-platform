@@ -387,10 +387,10 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
           <p
             key={`${paragraphIndex}-${blockIndex}`}
             tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSixEnglish ? 0 : undefined}
-            style={highlightGradeSixEnglish ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
+            style={highlightGradeSixEnglish || highlightGradeFiveEnglish ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
               highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSixEnglish
-                ? `${highlightGradeSixEnglish ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
+                ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
                   highlightGradeFiveComputerScience || highlightGradeSixComputerScience
                     ? 'hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-300'
                     : 'hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300'
@@ -728,95 +728,19 @@ function splitGradeFiveEnglish(paragraph: string): {
   marker: boolean;
   science: false;
   english: boolean;
-  kind: 'text' | 'label' | 'number' | 'dash' | 'arrow';
+  kind: ReturnType<typeof splitGradeSixEnglish>[number]['kind'];
 }[] {
-  const starts: { index: number; kind: 'label' | 'number' | 'dash' | 'arrow' }[] = [];
-  const addMatches = (pattern: RegExp, kind: 'label' | 'number' | 'dash') => {
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(paragraph)) !== null) {
-      const index = match.index;
-      if (index === 0 || /\s/.test(paragraph[index - 1])) starts.push({ index, kind });
-    }
-  };
-  addMatches(/\b(?:Past time expressions help us|Spelling patterns|Examples?|IMPORTANT RULE|Quick test|Routine|Weekly plan|Events|You need|Mistake[^:\n]{0,40}|Correct[^:\n]{0,40}|Answer)\s*:/gi, 'label');
-  addMatches(/\d+\.\s+/g, 'number');
-  addMatches(/-(?=\s)/g, 'dash');
-
-  const arrowPattern = /->/g;
-  let arrow: RegExpExecArray | null;
-  while ((arrow = arrowPattern.exec(paragraph)) !== null) {
-    let index = arrow.index;
-    while (index > 0 && /[A-Za-z0-9'-]/.test(paragraph[index - 1])) index -= 1;
-    starts.push({ index, kind: 'arrow' });
-  }
-  starts.sort((a, b) => a.index - b.index);
-  const uniqueStarts = starts.filter((start, index) =>
-    index === 0 || start.index !== starts[index - 1].index);
-
-  if (uniqueStarts.length === 0) {
-    return [{ text: paragraph, marker: false, science: false, english: false, kind: 'text' }];
-  }
-
-  const blocks: ReturnType<typeof splitGradeFiveEnglish> = [];
-  if (uniqueStarts[0].index > 0) {
-    blocks.push({
-      text: paragraph.slice(0, uniqueStarts[0].index),
-      marker: false,
-      science: false,
-      english: false,
-      kind: 'text',
-    });
-  }
-  uniqueStarts.forEach((start, index) => {
-    const end = uniqueStarts[index + 1]?.index ?? paragraph.length;
-    blocks.push({
-      text: paragraph.slice(start.index, end),
-      marker: true,
-      science: false,
-      english: true,
-      kind: start.kind,
-    });
-  });
-  return blocks;
+  return splitGradeSixEnglish(paragraph).map(({ text, marker, english, kind }) => ({
+    text,
+    marker,
+    science: false,
+    english,
+    kind,
+  }));
 }
 
 function renderGradeFiveEnglishBlock(text: string, kind: string) {
-  if (kind === 'label') {
-    const label = /^(?:Past time expressions help us|Spelling patterns|Examples?|IMPORTANT RULE|Quick test|Routine|Weekly plan|Events|You need|Mistake[^:\n]{0,40}|Correct[^:\n]{0,40}|Answer)\s*:/i.exec(text);
-    if (label) {
-      return (
-        <>
-          <strong className="font-bold text-sky-900 underline decoration-sky-400 underline-offset-2">{label[0]}</strong>
-          {text.slice(label[0].length)}
-        </>
-      );
-    }
-  }
-
-  if (kind === 'arrow') {
-    const arrowIndex = text.indexOf('->');
-    const pairEnd = text.search(/[,;\n]/);
-    const emphasizedEnd = pairEnd >= 0 ? pairEnd : text.length;
-    const emphasisLength = Math.max(arrowIndex + 2, emphasizedEnd);
-    return (
-      <>
-        <strong className="font-bold text-sky-900">{text.slice(0, emphasisLength)}</strong>
-        {text.slice(emphasisLength)}
-      </>
-    );
-  }
-
-  const marker = kind === 'number' ? /^(\d+\.\s+)/ : kind === 'dash' ? /^(-\s+)/ : null;
-  const match = marker?.exec(text);
-  if (match) {
-    return (
-      <>
-        <strong className="font-bold text-sky-900">{match[0]}</strong>
-        {text.slice(match[0].length)}
-      </>
-    );
-  }
-  return text;
+  return renderGradeSixEnglishBlock(text, kind);
 }
 
 function splitGradeFiveComputerScience(paragraph: string): {

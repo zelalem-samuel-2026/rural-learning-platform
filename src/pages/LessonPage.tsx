@@ -35,6 +35,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(0);
   const [isGradeFiveGeneralScience, setIsGradeFiveGeneralScience] = useState(false);
+  const [isGradeFiveEnglish, setIsGradeFiveEnglish] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +45,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         return;
       }
       setIsGradeFiveGeneralScience(false);
+      setIsGradeFiveEnglish(false);
       try {
         const deviceId = getDeviceId();
         const [l, savedSet, progMap] = await Promise.all([
@@ -54,17 +56,21 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         if (!active || !l) return;
         const isGradeFive = /^(?:grade[-_\s]*)?5$/i.test(l.grade_id.trim());
         let isGeneralScience = /science|አካባቢ/i.test(l.subject_id);
-        if (isGradeFive && !isGeneralScience) {
+        let isEnglish = /english|እንግሊዝ/i.test(l.subject_id);
+        if (isGradeFive && (!isGeneralScience || !isEnglish)) {
           try {
             const subjects = await fetchSubjectsForGrade(l.grade_id);
             const subject = subjects.find((item) => item.id === l.subject_id);
-            isGeneralScience = /general\s*science|አካባቢ\s*ሳይንስ/i.test(`${subject?.name.en || ''} ${subject?.name.am || ''}`);
+            const subjectName = `${subject?.name.en || ''} ${subject?.name.am || ''}`;
+            isGeneralScience = isGeneralScience || /general\s*science|አካባቢ\s*ሳይንስ/i.test(subjectName);
+            isEnglish = isEnglish || /english|እንግሊዝ/i.test(subjectName);
           } catch (error) {
             console.error('Unable to identify lesson subject for formatting:', error);
           }
         }
         if (!active) return;
         setIsGradeFiveGeneralScience(isGradeFive && isGeneralScience);
+        setIsGradeFiveEnglish(isGradeFive && isEnglish);
         setLesson(l);
         setSaved(savedSet.has(resolvedLessonId));
         const prog = progMap[resolvedLessonId];
@@ -235,6 +241,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             index={i}
             highlightGradeFiveMath={lesson.grade_id === 'grade-5' && /math|ሒሳብ/i.test(lesson.subject_id)}
             highlightGradeFiveScience={isGradeFiveGeneralScience}
+            highlightGradeFiveEnglish={isGradeFiveEnglish}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -302,12 +309,13 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
   highlightGradeFiveMath: boolean;
   highlightGradeFiveScience: boolean;
+  highlightGradeFiveEnglish: boolean;
 }) {
   const isExample = section.type === 'example';
   return (
@@ -324,26 +332,39 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
       <h3 className="font-bold text-ink-900 text-lg mb-3">{section.heading}</h3>
       {section.paragraphs.flatMap((paragraph, paragraphIndex) => {
         const blocks = highlightGradeFiveMath
-          ? splitIdeaBlocks(paragraph).map((block) => ({ ...block, science: false }))
+          ? splitIdeaBlocks(paragraph).map((block) => ({ ...block, science: false, english: false, kind: 'marker' as const }))
           : highlightGradeFiveScience
-            ? splitScienceBlocks(paragraph)
-            : [{ text: paragraph, marker: false, science: false }];
+            ? splitScienceBlocks(paragraph).map((block) => ({ ...block, english: false, kind: block.marker ? 'marker' as const : 'text' as const }))
+            : highlightGradeFiveEnglish
+              ? splitGradeFiveEnglish(paragraph)
+              : [{ text: paragraph, marker: false, science: false, english: false, kind: 'text' as const }];
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
+            tabIndex={highlightGradeFiveEnglish ? 0 : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
+              highlightGradeFiveEnglish
+                ? 'font-sans text-[1.05rem] leading-8 tracking-[0.01em] transition-colors hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 rounded-md'
+                : ''
+            } ${
               block.marker
                 ? `mt-5 first:mt-0 rounded-lg border-l-4 px-4 py-3 ${
-                  block.science ? 'border-emerald-300 bg-emerald-50/60' : 'border-primary-300 bg-primary-50/60'
+                  block.science
+                    ? 'border-emerald-300 bg-emerald-50/60'
+                    : block.english
+                      ? 'border-sky-300 bg-sky-50/60'
+                      : 'border-primary-300 bg-primary-50/60'
                 }`
                 : ''
             }`}
           >
-            {block.science
-              ? renderScienceBlock(block.text)
-              : block.marker
-                ? renderIdeaBlock(block.text)
-                : block.text}
+            {block.english
+              ? renderGradeFiveEnglishBlock(block.text, block.kind)
+              : block.science
+                ? renderScienceBlock(block.text)
+                : block.marker
+                  ? renderIdeaBlock(block.text)
+                  : block.text}
           </p>
         ));
       })}
@@ -445,4 +466,100 @@ function renderScienceBlock(text: string) {
       {text.slice(marker[0].length)}
     </>
   );
+}
+
+function splitGradeFiveEnglish(paragraph: string): {
+  text: string;
+  marker: boolean;
+  science: false;
+  english: boolean;
+  kind: 'text' | 'label' | 'number' | 'dash' | 'arrow';
+}[] {
+  const starts: { index: number; kind: 'label' | 'number' | 'dash' | 'arrow' }[] = [];
+  const addMatches = (pattern: RegExp, kind: 'label' | 'number' | 'dash') => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(paragraph)) !== null) {
+      const index = match.index;
+      if (index === 0 || /\s/.test(paragraph[index - 1])) starts.push({ index, kind });
+    }
+  };
+  addMatches(/\b(?:Past time expressions help us|Spelling patterns|Examples?|IMPORTANT RULE|Quick test|Routine|Weekly plan|Events|You need|Mistake[^:\n]{0,40}|Correct[^:\n]{0,40}|Answer)\s*:/gi, 'label');
+  addMatches(/\d+\.\s+/g, 'number');
+  addMatches(/-(?=\s)/g, 'dash');
+
+  const arrowPattern = /->/g;
+  let arrow: RegExpExecArray | null;
+  while ((arrow = arrowPattern.exec(paragraph)) !== null) {
+    let index = arrow.index;
+    while (index > 0 && /[A-Za-z0-9'-]/.test(paragraph[index - 1])) index -= 1;
+    starts.push({ index, kind: 'arrow' });
+  }
+  starts.sort((a, b) => a.index - b.index);
+  const uniqueStarts = starts.filter((start, index) =>
+    index === 0 || start.index !== starts[index - 1].index);
+
+  if (uniqueStarts.length === 0) {
+    return [{ text: paragraph, marker: false, science: false, english: false, kind: 'text' }];
+  }
+
+  const blocks: ReturnType<typeof splitGradeFiveEnglish> = [];
+  if (uniqueStarts[0].index > 0) {
+    blocks.push({
+      text: paragraph.slice(0, uniqueStarts[0].index),
+      marker: false,
+      science: false,
+      english: false,
+      kind: 'text',
+    });
+  }
+  uniqueStarts.forEach((start, index) => {
+    const end = uniqueStarts[index + 1]?.index ?? paragraph.length;
+    blocks.push({
+      text: paragraph.slice(start.index, end),
+      marker: true,
+      science: false,
+      english: true,
+      kind: start.kind,
+    });
+  });
+  return blocks;
+}
+
+function renderGradeFiveEnglishBlock(text: string, kind: string) {
+  if (kind === 'label') {
+    const label = /^(?:Past time expressions help us|Spelling patterns|Examples?|IMPORTANT RULE|Quick test|Routine|Weekly plan|Events|You need|Mistake[^:\n]{0,40}|Correct[^:\n]{0,40}|Answer)\s*:/i.exec(text);
+    if (label) {
+      return (
+        <>
+          <strong className="font-bold text-sky-900 underline decoration-sky-400 underline-offset-2">{label[0]}</strong>
+          {text.slice(label[0].length)}
+        </>
+      );
+    }
+  }
+
+  if (kind === 'arrow') {
+    const arrowIndex = text.indexOf('->');
+    const pairEnd = text.search(/[,;\n]/);
+    const emphasizedEnd = pairEnd >= 0 ? pairEnd : text.length;
+    const emphasisLength = Math.max(arrowIndex + 2, emphasizedEnd);
+    return (
+      <>
+        <strong className="font-bold text-sky-900">{text.slice(0, emphasisLength)}</strong>
+        {text.slice(emphasisLength)}
+      </>
+    );
+  }
+
+  const marker = kind === 'number' ? /^(\d+\.\s+)/ : kind === 'dash' ? /^(-\s+)/ : null;
+  const match = marker?.exec(text);
+  if (match) {
+    return (
+      <>
+        <strong className="font-bold text-sky-900">{match[0]}</strong>
+        {text.slice(match[0].length)}
+      </>
+    );
+  }
+  return text;
 }

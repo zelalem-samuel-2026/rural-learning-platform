@@ -36,6 +36,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [activeSection, setActiveSection] = useState(0);
   const [isGradeFiveGeneralScience, setIsGradeFiveGeneralScience] = useState(false);
   const [isGradeFiveEnglish, setIsGradeFiveEnglish] = useState(false);
+  const [isGradeFiveComputerScience, setIsGradeFiveComputerScience] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +47,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       }
       setIsGradeFiveGeneralScience(false);
       setIsGradeFiveEnglish(false);
+      setIsGradeFiveComputerScience(false);
       try {
         const deviceId = getDeviceId();
         const [l, savedSet, progMap] = await Promise.all([
@@ -55,15 +57,17 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         ]);
         if (!active || !l) return;
         const isGradeFive = /^(?:grade[-_\s]*)?5$/i.test(l.grade_id.trim());
-        let isGeneralScience = /science|አካባቢ/i.test(l.subject_id);
+        let isGeneralScience = /^(?:general[-_\s]*)?science$/i.test(l.subject_id) || /አካባቢ/i.test(l.subject_id);
         let isEnglish = /english|እንግሊዝ/i.test(l.subject_id);
-        if (isGradeFive && (!isGeneralScience || !isEnglish)) {
+        let isComputerScience = /computer[-_\s]*science|computing|ኮምፒውተር/i.test(l.subject_id);
+        if (isGradeFive && (!isGeneralScience || !isEnglish || !isComputerScience)) {
           try {
             const subjects = await fetchSubjectsForGrade(l.grade_id);
             const subject = subjects.find((item) => item.id === l.subject_id);
             const subjectName = `${subject?.name.en || ''} ${subject?.name.am || ''}`;
             isGeneralScience = isGeneralScience || /general\s*science|አካባቢ\s*ሳይንስ/i.test(subjectName);
             isEnglish = isEnglish || /english|እንግሊዝ/i.test(subjectName);
+            isComputerScience = isComputerScience || /computer\s*science|computing|ኮምፒውተር/i.test(subjectName);
           } catch (error) {
             console.error('Unable to identify lesson subject for formatting:', error);
           }
@@ -71,6 +75,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         if (!active) return;
         setIsGradeFiveGeneralScience(isGradeFive && isGeneralScience);
         setIsGradeFiveEnglish(isGradeFive && isEnglish);
+        setIsGradeFiveComputerScience(isGradeFive && isComputerScience);
         setLesson(l);
         setSaved(savedSet.has(resolvedLessonId));
         const prog = progMap[resolvedLessonId];
@@ -242,6 +247,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             highlightGradeFiveMath={lesson.grade_id === 'grade-5' && /math|ሒሳብ/i.test(lesson.subject_id)}
             highlightGradeFiveScience={isGradeFiveGeneralScience}
             highlightGradeFiveEnglish={isGradeFiveEnglish}
+            highlightGradeFiveComputerScience={isGradeFiveComputerScience}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -309,13 +315,14 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
   highlightGradeFiveMath: boolean;
   highlightGradeFiveScience: boolean;
   highlightGradeFiveEnglish: boolean;
+  highlightGradeFiveComputerScience: boolean;
 }) {
   const isExample = section.type === 'example';
   return (
@@ -332,34 +339,44 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
       <h3 className="font-bold text-ink-900 text-lg mb-3">{section.heading}</h3>
       {section.paragraphs.flatMap((paragraph, paragraphIndex) => {
         const blocks = highlightGradeFiveMath
-          ? splitIdeaBlocks(paragraph).map((block) => ({ ...block, science: false, english: false, kind: 'marker' as const }))
+          ? splitIdeaBlocks(paragraph).map((block) => ({ ...block, science: false, english: false, computerScience: false, kind: 'marker' as const }))
           : highlightGradeFiveScience
-            ? splitScienceBlocks(paragraph).map((block) => ({ ...block, english: false, kind: block.marker ? 'marker' as const : 'text' as const }))
+            ? splitScienceBlocks(paragraph).map((block) => ({ ...block, english: false, computerScience: false, kind: block.marker ? 'marker' as const : 'text' as const }))
             : highlightGradeFiveEnglish
-              ? splitGradeFiveEnglish(paragraph)
-              : [{ text: paragraph, marker: false, science: false, english: false, kind: 'text' as const }];
+              ? splitGradeFiveEnglish(paragraph).map((block) => ({ ...block, computerScience: false }))
+              : highlightGradeFiveComputerScience
+                ? splitGradeFiveComputerScience(paragraph)
+                : [{ text: paragraph, marker: false, science: false, english: false, computerScience: false, kind: 'text' as const }];
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
-            tabIndex={highlightGradeFiveEnglish ? 0 : undefined}
+            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience ? 0 : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
-              highlightGradeFiveEnglish
-                ? 'font-sans text-[1.05rem] leading-8 tracking-[0.01em] transition-colors hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300 rounded-md'
+              highlightGradeFiveEnglish || highlightGradeFiveComputerScience
+                ? `font-sans text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
+                  highlightGradeFiveComputerScience
+                    ? 'hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-300'
+                    : 'hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300'
+                }`
                 : ''
             } ${
               block.marker
                 ? `mt-5 first:mt-0 rounded-lg border-l-4 px-4 py-3 ${
                   block.science
                     ? 'border-emerald-300 bg-emerald-50/60'
-                    : block.english
+                    : block.computerScience
+                      ? 'border-indigo-300 bg-indigo-50/60'
+                      : block.english
                       ? 'border-sky-300 bg-sky-50/60'
                       : 'border-primary-300 bg-primary-50/60'
                 }`
                 : ''
             }`}
           >
-            {block.english
-              ? renderGradeFiveEnglishBlock(block.text, block.kind)
+            {block.computerScience
+              ? renderGradeFiveComputerScienceBlock(block.text, block.kind)
+              : block.english
+                ? renderGradeFiveEnglishBlock(block.text, block.kind)
               : block.science
                 ? renderScienceBlock(block.text)
                 : block.marker
@@ -562,4 +579,111 @@ function renderGradeFiveEnglishBlock(text: string, kind: string) {
     );
   }
   return text;
+}
+
+function splitGradeFiveComputerScience(paragraph: string): {
+  text: string;
+  marker: boolean;
+  science: false;
+  english: false;
+  computerScience: boolean;
+  kind: 'text' | 'emoji' | 'label' | 'number' | 'bullet' | 'dash';
+}[] {
+  const starts: { index: number; kind: 'emoji' | 'label' | 'number' | 'bullet' | 'dash' }[] = [];
+  const addMatches = (pattern: RegExp, kind: 'emoji' | 'number' | 'bullet' | 'dash') => {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(paragraph)) !== null) {
+      const index = match.index;
+      if (index === 0 || /\s/.test(paragraph[index - 1])) starts.push({ index, kind });
+    }
+  };
+  addMatches(/\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu, 'emoji');
+  addMatches(/\d+[.)]\s+/g, 'number');
+  addMatches(/•/g, 'bullet');
+  addMatches(/-(?=\s)/g, 'dash');
+
+  const colonPattern = /:/g;
+  let colon: RegExpExecArray | null;
+  while ((colon = colonPattern.exec(paragraph)) !== null) {
+    if (colon.index + 1 < paragraph.length && !/\s/.test(paragraph[colon.index + 1])) continue;
+    let start = colon.index;
+    while (start > 0 && colon.index - start < 48 && !/[.!?;,\n]/.test(paragraph[start - 1])) start -= 1;
+    while (start < colon.index && /\s/.test(paragraph[start])) start += 1;
+    const label = paragraph.slice(start, colon.index).trimEnd();
+    if (!/^[A-Za-z][A-Za-z0-9 '&/-]{0,45}$/.test(label)) continue;
+    const prefix = paragraph.slice(0, start);
+    const emoji = prefix.match(/(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*$/u);
+    const listMarker = prefix.match(/(?:^|\s)(\d+[.)]\s+|•\s+|-\s+)$/);
+    if (emoji) {
+      starts.push({ index: start - emoji[0].length, kind: 'emoji' });
+    } else if (listMarker) {
+      const markerStart = start - listMarker[0].length + listMarker[0].search(/\S/);
+      starts.push({ index: markerStart, kind: /^\d/.test(listMarker[1]) ? 'number' : listMarker[1].startsWith('•') ? 'bullet' : 'dash' });
+    } else {
+      starts.push({ index: start, kind: 'label' });
+    }
+  }
+
+  starts.sort((a, b) => a.index - b.index);
+  const uniqueStarts = starts.filter((start, index) =>
+    index === 0 || start.index !== starts[index - 1].index);
+  if (uniqueStarts.length === 0) {
+    return [{ text: paragraph, marker: false, science: false, english: false, computerScience: false, kind: 'text' }];
+  }
+
+  const blocks: ReturnType<typeof splitGradeFiveComputerScience> = [];
+  if (uniqueStarts[0].index > 0) {
+    blocks.push({
+      text: paragraph.slice(0, uniqueStarts[0].index),
+      marker: false,
+      science: false,
+      english: false,
+      computerScience: false,
+      kind: 'text',
+    });
+  }
+  uniqueStarts.forEach((start, index) => {
+    const end = uniqueStarts[index + 1]?.index ?? paragraph.length;
+    blocks.push({
+      text: paragraph.slice(start.index, end),
+      marker: true,
+      science: false,
+      english: false,
+      computerScience: true,
+      kind: start.kind,
+    });
+  });
+  return blocks;
+}
+
+function renderGradeFiveComputerScienceBlock(text: string, kind: string) {
+  const colonIndex = text.indexOf(':');
+  if (colonIndex >= 0 && colonIndex < 64) {
+    return (
+      <>
+        <strong className="font-bold text-indigo-900 underline decoration-indigo-400 underline-offset-2">{text.slice(0, colonIndex + 1)}</strong>
+        {text.slice(colonIndex + 1)}
+      </>
+    );
+  }
+
+  const marker = kind === 'number'
+    ? /^(\d+[.)]\s+)/
+    : kind === 'dash'
+      ? /^(-\s+)/
+      : kind === 'bullet'
+        ? /^(•)/
+        : /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/u;
+  const match = marker.exec(text);
+  if (!match) return text;
+
+  const emphasisEnd = kind === 'emoji'
+    ? match[0].length + (text.slice(match[0].length).match(/^\s*[\p{L}][\p{L}'-]*(?:\s+[\p{L}][\p{L}'-]*)?/u)?.[0].length || 0)
+    : match[0].length;
+  return (
+    <>
+      <strong className="font-bold text-indigo-900 underline decoration-indigo-400 underline-offset-2">{text.slice(0, emphasisEnd)}</strong>
+      {text.slice(emphasisEnd)}
+    </>
+  );
 }

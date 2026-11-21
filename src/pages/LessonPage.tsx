@@ -48,6 +48,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [isGradeSevenSocialScience, setIsGradeSevenSocialScience] = useState(false);
   const [isGradeEightSocialScience, setIsGradeEightSocialScience] = useState(false);
   const [isGradeSevenCitizenship, setIsGradeSevenCitizenship] = useState(false);
+  const [isGradeEightCitizenship, setIsGradeEightCitizenship] = useState(false);
   const [isGradeSevenEnglish, setIsGradeSevenEnglish] = useState(false);
   const [isGradeEightEnglish, setIsGradeEightEnglish] = useState(false);
   const [isGradeSevenComputerScience, setIsGradeSevenComputerScience] = useState(false);
@@ -74,6 +75,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       setIsGradeSevenSocialScience(false);
       setIsGradeEightSocialScience(false);
       setIsGradeSevenCitizenship(false);
+      setIsGradeEightCitizenship(false);
       setIsGradeSevenEnglish(false);
       setIsGradeEightEnglish(false);
       setIsGradeSevenComputerScience(false);
@@ -102,7 +104,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         if ((isGradeFive && (!isGeneralScience || !isEnglish || !isComputerScience))
           || (isGradeSix && (!isMathematics || !isGradeSixScienceSubject || !isComputerScience))
           || (isGradeSeven && (!isEnglish || !isCitizenship))
-          || (isGradeEight && !isEnglish)) {
+          || (isGradeEight && (!isEnglish || !isCitizenship))) {
           try {
             const subjects = await fetchSubjectsForGrade(l.grade_id);
             const subject = subjects.find((item) => item.id === l.subject_id);
@@ -133,6 +135,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         setIsGradeSevenSocialScience(isGradeSeven && isSocialScience);
         setIsGradeEightSocialScience(isGradeEight && isSocialScience);
         setIsGradeSevenCitizenship(isGradeSeven && isCitizenship);
+        setIsGradeEightCitizenship(isGradeEight && isCitizenship);
         setIsGradeSevenEnglish(isGradeSeven && isEnglish);
         setIsGradeEightEnglish(isGradeEight && isEnglish);
         setIsGradeSevenComputerScience(isGradeSeven && isComputerScience);
@@ -320,6 +323,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             highlightGradeSevenSocialScience={isGradeSevenSocialScience}
             highlightGradeEightSocialScience={isGradeEightSocialScience}
             highlightGradeSevenCitizenship={isGradeSevenCitizenship}
+            highlightGradeEightCitizenship={isGradeEightCitizenship}
             highlightGradeSevenEnglish={isGradeSevenEnglish}
             highlightGradeEightEnglish={isGradeEightEnglish}
             highlightGradeSevenComputerScience={isGradeSevenComputerScience}
@@ -391,7 +395,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenMath, highlightGradeEightMath, highlightGradeSevenScience, highlightGradeEightScience, highlightGradeSevenSocialScience, highlightGradeEightSocialScience, highlightGradeSevenCitizenship, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience, highlightGradeEightComputerScience }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenMath, highlightGradeEightMath, highlightGradeSevenScience, highlightGradeEightScience, highlightGradeSevenSocialScience, highlightGradeEightSocialScience, highlightGradeSevenCitizenship, highlightGradeEightCitizenship, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience, highlightGradeEightComputerScience }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
@@ -410,6 +414,7 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
   highlightGradeSevenSocialScience: boolean;
   highlightGradeEightSocialScience: boolean;
   highlightGradeSevenCitizenship: boolean;
+  highlightGradeEightCitizenship: boolean;
   highlightGradeSevenEnglish: boolean;
   highlightGradeEightEnglish: boolean;
   highlightGradeSevenComputerScience: boolean;
@@ -453,6 +458,8 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                     ? splitGradeEightSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
                   : highlightGradeSevenCitizenship
                     ? splitGradeSevenSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
+                  : highlightGradeEightCitizenship
+                    ? splitGradeEightSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
                   : highlightGradeSixScience
                     ? splitGradeSixScience(paragraph).map((block) => ({ ...block, science: false, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: block.marker }))
                     : highlightGradeSixComputerScience
@@ -471,11 +478,11 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
-            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
-            style={highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
+            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeEightCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
+            style={highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeEightCitizenship ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
-              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
-                ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
+              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeEightCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
+                ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeEightCitizenship ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
                   highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience
                     ? 'hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-300'
                     : 'hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300'
@@ -518,17 +525,19 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                   ? renderGradeSixEnglishBlock(block.text, block.kind)
                   : renderGradeFiveEnglishBlock(block.text, block.kind)
               : block.science
-                ? highlightGradeSevenCitizenship
-                  ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
-                  : highlightGradeEightSocialScience
-                    ? renderGradeEightSocialScienceBlock(block.text, block.kind)
-                    : highlightGradeSevenSocialScience
-                      ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
-                      : highlightGradeEightScience
-                        ? renderGradeEightScienceBlock(block.text, block.kind)
-                        : highlightGradeSevenScience
-                          ? renderGradeSevenScienceBlock(block.text, block.kind)
-                          : renderScienceBlock(block.text)
+                ? highlightGradeEightCitizenship
+                  ? renderGradeEightSocialScienceBlock(block.text, block.kind)
+                  : highlightGradeSevenCitizenship
+                    ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
+                    : highlightGradeEightSocialScience
+                      ? renderGradeEightSocialScienceBlock(block.text, block.kind)
+                      : highlightGradeSevenSocialScience
+                        ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
+                        : highlightGradeEightScience
+                          ? renderGradeEightScienceBlock(block.text, block.kind)
+                          : highlightGradeSevenScience
+                            ? renderGradeSevenScienceBlock(block.text, block.kind)
+                            : renderScienceBlock(block.text)
                 : block.marker
                   ? renderIdeaBlock(block.text)
                   : block.text}

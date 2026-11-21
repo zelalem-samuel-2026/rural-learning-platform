@@ -44,6 +44,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [isGradeSevenEnglish, setIsGradeSevenEnglish] = useState(false);
   const [isGradeEightEnglish, setIsGradeEightEnglish] = useState(false);
   const [isGradeSevenComputerScience, setIsGradeSevenComputerScience] = useState(false);
+  const [isGradeEightComputerScience, setIsGradeEightComputerScience] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -62,6 +63,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       setIsGradeSevenEnglish(false);
       setIsGradeEightEnglish(false);
       setIsGradeSevenComputerScience(false);
+      setIsGradeEightComputerScience(false);
       try {
         const deviceId = getDeviceId();
         const [l, savedSet, progMap] = await Promise.all([
@@ -109,6 +111,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         setIsGradeSevenEnglish(isGradeSeven && isEnglish);
         setIsGradeEightEnglish(isGradeEight && isEnglish);
         setIsGradeSevenComputerScience(isGradeSeven && isComputerScience);
+        setIsGradeEightComputerScience(isGradeEight && isComputerScience);
         setLesson(l);
         setSaved(savedSet.has(resolvedLessonId));
         const prog = progMap[resolvedLessonId];
@@ -288,6 +291,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             highlightGradeSevenEnglish={isGradeSevenEnglish}
             highlightGradeEightEnglish={isGradeEightEnglish}
             highlightGradeSevenComputerScience={isGradeSevenComputerScience}
+            highlightGradeEightComputerScience={isGradeEightComputerScience}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -355,7 +359,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience, highlightGradeEightComputerScience }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
@@ -370,6 +374,7 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
   highlightGradeSevenEnglish: boolean;
   highlightGradeEightEnglish: boolean;
   highlightGradeSevenComputerScience: boolean;
+  highlightGradeEightComputerScience: boolean;
 }) {
   const isExample = section.type === 'example';
   return (
@@ -401,6 +406,8 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                         ? splitGradeSixComputerScience(paragraph).map((block) => ({ ...block, gradeSixMath: false, gradeSixScience: false }))
                       : highlightGradeSevenComputerScience
                         ? splitGradeSixComputerScience(paragraph, true).map((block) => ({ ...block, gradeSixMath: false, gradeSixScience: false }))
+                      : highlightGradeEightComputerScience
+                        ? splitGradeSixComputerScience(paragraph, false, true).map((block) => ({ ...block, gradeSixMath: false, gradeSixScience: false }))
                       : highlightGradeSixEnglish
                         ? splitGradeSixEnglish(paragraph)
                       : highlightGradeSevenEnglish
@@ -411,12 +418,12 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
-            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
+            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
             style={highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
-              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
+              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
                 ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
-                  highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience
+                  highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience
                     ? 'hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-300'
                     : 'hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300'
                 }`
@@ -444,7 +451,7 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
               : block.gradeSixMath
               ? renderGradeSixMathBlock(block.text, block.kind)
               : block.computerScience
-              ? highlightGradeSixComputerScience || highlightGradeSevenComputerScience
+              ? highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience
                 ? renderGradeSixComputerScienceBlock(block.text, block.kind, highlightGradeSevenComputerScience)
                 : renderGradeFiveComputerScienceBlock(block.text, block.kind)
               : block.english
@@ -876,16 +883,16 @@ function renderGradeFiveComputerScienceBlock(text: string, kind: string) {
     </>
   );
 }
-function splitGradeSixComputerScience(paragraph: string, includeGradeSevenPatterns = false): {
+function splitGradeSixComputerScience(paragraph: string, includeGradeSevenPatterns = false, includeGradeEightPatterns = false): {
   text: string;
   marker: boolean;
   science: false;
   english: false;
   computerScience: boolean;
-  kind: 'text' | 'emoji' | 'label' | 'number' | 'bullet' | 'dash' | 'arrow' | 'heading';
+  kind: 'text' | 'emoji' | 'label' | 'number' | 'bullet' | 'dash' | 'arrow' | 'heading' | 'table';
 }[] {
-  const starts: { index: number; kind: 'emoji' | 'label' | 'number' | 'bullet' | 'dash' | 'arrow' | 'heading' }[] = [];
-  const addMatches = (pattern: RegExp, kind: 'emoji' | 'number' | 'bullet' | 'dash' | 'heading') => {
+  const starts: { index: number; kind: 'emoji' | 'label' | 'number' | 'bullet' | 'dash' | 'arrow' | 'heading' | 'table' }[] = [];
+  const addMatches = (pattern: RegExp, kind: 'emoji' | 'number' | 'bullet' | 'dash' | 'heading' | 'table') => {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(paragraph)) !== null) {
       const index = match.index;
@@ -902,6 +909,19 @@ function splitGradeSixComputerScience(paragraph: string, includeGradeSevenPatter
   if (includeGradeSevenPatterns) {
     addMatches(/\d+[.,)](?=\s|[A-Za-z])\s*/g, 'number');
     addMatches(/\bSECTION(?:\s*[-–—]\s*[A-Z0-9]+|\s+[A-Z0-9]+)?(?=\s|:|$)/gi, 'heading');
+  }
+  if (includeGradeEightPatterns) {
+    const firstLineEnd = paragraph.indexOf('\n');
+    const firstLine = paragraph.slice(0, firstLineEnd < 0 ? paragraph.length : firstLineEnd);
+    if (firstLine.includes('|')) {
+      const firstRowStart = firstLine.search(/\S/);
+      if (firstRowStart >= 0) starts.push({ index: firstRowStart, kind: 'table' });
+    }
+    const followingRows = /\n(?=[^\n]*\|)/g;
+    let row: RegExpExecArray | null;
+    while ((row = followingRows.exec(paragraph)) !== null) {
+      starts.push({ index: row.index + 1, kind: 'table' });
+    }
   }
 
   const arrowPattern = /->/g;
@@ -971,6 +991,24 @@ function splitGradeSixComputerScience(paragraph: string, includeGradeSevenPatter
 }
 
 function renderGradeSixComputerScienceBlock(text: string, kind: string, includeGradeSevenPatterns = false) {
+  if (kind === 'table') {
+    const rowEnd = text.search(/\n/);
+    const rowLength = rowEnd < 0 ? text.length : rowEnd;
+    const rowStart = text.slice(0, rowLength).search(/\S/);
+    const firstPipe = text.indexOf('|');
+    const secondPipe = firstPipe === rowStart ? text.indexOf('|', firstPipe + 1) : -1;
+    const emphasisPipe = secondPipe >= 0 ? secondPipe : firstPipe;
+    const emphasisEnd = emphasisPipe >= 0 && emphasisPipe < rowLength
+      ? emphasisPipe + 1
+      : rowLength;
+    return (
+      <>
+        <strong className="font-bold text-indigo-900 underline decoration-indigo-400 underline-offset-2">{text.slice(0, emphasisEnd)}</strong>
+        {text.slice(emphasisEnd)}
+      </>
+    );
+  }
+
   const labelMatch = /፦|:-|:(?=\s|$)/.exec(text);
   if (labelMatch && labelMatch.index < 72) {
     const labelEnd = labelMatch.index + labelMatch[0].length;

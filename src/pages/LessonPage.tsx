@@ -520,9 +520,9 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                 : renderGradeFiveComputerScienceBlock(block.text, block.kind)
               : block.english
                 ? highlightGradeEightEnglish
-                  ? renderGradeSixEnglishBlock(block.text, block.kind, true)
+                  ? renderGradeSixEnglishBlock(block.text, block.kind, true, false)
                   : highlightGradeSixEnglish || highlightGradeSevenEnglish
-                  ? renderGradeSixEnglishBlock(block.text, block.kind)
+                  ? renderGradeSixEnglishBlock(block.text, block.kind, false, highlightGradeSevenEnglish)
                   : renderGradeFiveEnglishBlock(block.text, block.kind)
               : block.science
                 ? highlightGradeEightCitizenship
@@ -1723,10 +1723,22 @@ function splitGradeSixEnglish(paragraph: string, includeGradeSevenPatterns = fal
     starts.push({ index, kind: 'arrow' });
   }
 
+  const gradeSevenCorrectionRanges: { start: number; end: number }[] = [];
+  if (includeGradeSevenPatterns) {
+    const correctionPattern = /\bWrong\s*:[^\n]*?\bCorrect\s*:[^\n]*?\bReason\s*:[^\n]*(?:(?:[.!?](?=\s|$))|(?=\n|$))/gi;
+    let correction: RegExpExecArray | null;
+    while ((correction = correctionPattern.exec(paragraph)) !== null) {
+      gradeSevenCorrectionRanges.push({ start: correction.index, end: correction.index + correction[0].length });
+      starts.push({ index: correction.index, kind: 'label' });
+    }
+  }
+
   const labelSeparators = /፦|:-|:/g;
   let separator: RegExpExecArray | null;
   while ((separator = labelSeparators.exec(paragraph)) !== null) {
     if (separator[0] === ':' && separator.index + 1 < paragraph.length && !/\s/.test(paragraph[separator.index + 1])) continue;
+    if (includeGradeSevenPatterns && gradeSevenCorrectionRanges.some((range) =>
+      separator.index >= range.start && separator.index < range.end)) continue;
     let start = separator.index;
     while (start > 0 && separator.index - start < 72 && !/[.!?;,\n፦:]/.test(paragraph[start - 1])) start -= 1;
     while (start < separator.index && /\s/.test(paragraph[start])) start += 1;
@@ -1748,6 +1760,14 @@ function splitGradeSixEnglish(paragraph: string, includeGradeSevenPatterns = fal
       starts.push({ index: markerStart, kind });
     } else {
       starts.push({ index: start, kind: 'label' });
+    }
+  }
+
+  if (includeGradeSevenPatterns && gradeSevenCorrectionRanges.length > 0) {
+    for (let i = starts.length - 1; i >= 0; i -= 1) {
+      const contained = gradeSevenCorrectionRanges.some((range) =>
+        starts[i].index > range.start && starts[i].index < range.end);
+      if (contained) starts.splice(i, 1);
     }
   }
 
@@ -1796,7 +1816,21 @@ function splitGradeSixEnglish(paragraph: string, includeGradeSevenPatterns = fal
   return blocks;
 }
 
-function renderGradeSixEnglishBlock(text: string, kind: string, includeGradeEightPatterns = false) {
+function renderGradeSixEnglishBlock(text: string, kind: string, includeGradeEightPatterns = false, includeGradeSevenPatterns = false) {
+  if (includeGradeSevenPatterns
+    && /\bWrong\s*:/i.test(text)
+    && /\bCorrect\s*:/i.test(text)
+    && /\bReason\s*:/i.test(text)) {
+    const parts = text.split(/(\b(?:Wrong|Correct|Reason)\s*:)/gi);
+    return (
+      <>
+        {parts.map((part, index) => /^(?:Wrong|Correct|Reason)\s*:/i.test(part)
+          ? <strong key={index} className="font-bold text-sky-900 underline decoration-sky-400 underline-offset-2">{part}</strong>
+          : <span key={index}>{part}</span>)}
+      </>
+    );
+  }
+
   const labelMatch = /፦|:-|:(?=\s|$)/.exec(text);
   if (labelMatch && labelMatch.index < 88) {
     const labelEnd = labelMatch.index + labelMatch[0].length;

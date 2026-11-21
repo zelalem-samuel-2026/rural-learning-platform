@@ -244,11 +244,24 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             {formatDuration(lesson.duration_min, lang)}
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 leading-tight mb-2">{title}</h1>
-        <p className="text-ink-600 leading-relaxed">{overview}</p>
+        <h1
+          className="text-2xl sm:text-3xl font-extrabold text-ink-900 leading-tight mb-2"
+          style={{ fontFamily: '"Noto Serif Ethiopic", "Abyssinica SIL", Lora, Georgia, serif' }}
+        >
+          {title}
+        </h1>
+        <p
+          className="text-ink-600 leading-relaxed"
+          style={{ fontFamily: '"Noto Serif Ethiopic", "Abyssinica SIL", Lora, Georgia, serif' }}
+        >
+          {overview}
+        </p>
 
         {/* Progress bar */}
-        <div className="mt-5">
+        <div
+          className="mt-5"
+          style={{ fontFamily: 'Lora, Georgia, "Noto Sans Ethiopic", "Abyssinica SIL", sans-serif' }}
+        >
           <div className="flex justify-between items-center mb-1.5">
             <span className="text-sm font-medium text-ink-600">{dict.lesson.lessonProgress}</span>
             <span className="text-sm font-bold text-ink-800">{percent}%</span>

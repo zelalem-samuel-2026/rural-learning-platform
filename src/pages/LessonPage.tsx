@@ -370,7 +370,16 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
           <RotateCcw className="w-5 h-5 text-success-600" />
           {dict.lesson.recap}
         </h2>
-        <p className="text-ink-700 leading-relaxed">{recap}</p>
+        <div
+          className="text-ink-700 text-[1.05rem] leading-8 tracking-[0.01em]"
+          style={{ fontFamily: '"Noto Serif Ethiopic", "Abyssinica SIL", Lora, Georgia, serif' }}
+        >
+          {splitRecapSentences(recap).map((sentence, index) => (
+            <p key={index} className="mb-3 last:mb-0">
+              {renderRecapSentence(sentence)}
+            </p>
+          ))}
+        </div>
       </Card>
 
       {/* Quiz CTA */}
@@ -578,6 +587,47 @@ function splitIdeaBlocks(paragraph: string): { text: string; marker: boolean }[]
     blocks.push({ text: paragraph.slice(start, end), marker: true });
   });
   return blocks;
+}
+
+function splitRecapSentences(recap: string): string[] {
+  const normalized = recap.replace(/\r\n?/g, '\n');
+  if (normalized.includes('\n')) {
+    const lines = normalized.split('\n').flatMap((line) => line
+      ? line.split(/(?<=[.!?።])(?:\s+)/u)
+      : ['']);
+    return lines.filter((line) => line.length > 0);
+  }
+  return normalized
+    .split(/(?<=[.!?።])(?:\s+)/u)
+    .filter((sentence) => sentence.length > 0);
+}
+
+function renderRecapSentence(sentence: string) {
+  const emojiMatch = sentence.match(/^((?:[#*0-9]\uFE0F?\u20E3|\p{Regional_Indicator}{2}|\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\p{Emoji_Modifier})?(?:\u200D\p{Extended_Pictographic}(?:\uFE0E|\uFE0F)?(?:\p{Emoji_Modifier})?)*))\s*([\p{L}\p{N}])/u);
+  if (emojiMatch) {
+    const emojiEnd = emojiMatch[1].length;
+    const titleEnd = sentence.slice(emojiEnd).search(/:|[.!?።]/u);
+    if (titleEnd >= 0 && titleEnd < 48) {
+      const emphasisEnd = emojiEnd + titleEnd + (sentence[emojiEnd + titleEnd] === ':' ? 1 : 0);
+      return (
+        <>
+          <strong className="font-bold text-ink-900">{sentence.slice(0, emphasisEnd)}</strong>
+          {sentence.slice(emphasisEnd)}
+        </>
+      );
+    }
+  }
+
+  const labelMatch = /^([^.!?\n።]{1,48}:)/u.exec(sentence);
+  if (labelMatch) {
+    return (
+      <>
+        <strong className="font-bold text-ink-900">{labelMatch[1]}</strong>
+        {sentence.slice(labelMatch[1].length)}
+      </>
+    );
+  }
+  return sentence;
 }
 
 function splitGradeSixMath(paragraph: string): {

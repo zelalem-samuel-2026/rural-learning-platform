@@ -47,6 +47,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [isGradeEightScience, setIsGradeEightScience] = useState(false);
   const [isGradeSevenSocialScience, setIsGradeSevenSocialScience] = useState(false);
   const [isGradeEightSocialScience, setIsGradeEightSocialScience] = useState(false);
+  const [isGradeSevenCitizenship, setIsGradeSevenCitizenship] = useState(false);
   const [isGradeSevenEnglish, setIsGradeSevenEnglish] = useState(false);
   const [isGradeEightEnglish, setIsGradeEightEnglish] = useState(false);
   const [isGradeSevenComputerScience, setIsGradeSevenComputerScience] = useState(false);
@@ -72,6 +73,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
       setIsGradeEightScience(false);
       setIsGradeSevenSocialScience(false);
       setIsGradeEightSocialScience(false);
+      setIsGradeSevenCitizenship(false);
       setIsGradeSevenEnglish(false);
       setIsGradeEightEnglish(false);
       setIsGradeSevenComputerScience(false);
@@ -96,9 +98,10 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         let isComputerScience = /computer[-_\s]*science|computing|ኮምፒውተር/i.test(l.subject_id);
         let isMathematics = /math|ሒሳብ/i.test(l.subject_id);
         let isSocialScience = /social[-_\s]*(?:science|studies)|ማህበራዊ/i.test(l.subject_id);
+        let isCitizenship = /citizen(?:ship)?|civic|ዜግነት/i.test(l.subject_id);
         if ((isGradeFive && (!isGeneralScience || !isEnglish || !isComputerScience))
           || (isGradeSix && (!isMathematics || !isGradeSixScienceSubject || !isComputerScience))
-          || (isGradeSeven && !isEnglish)
+          || (isGradeSeven && (!isEnglish || !isCitizenship))
           || (isGradeEight && !isEnglish)) {
           try {
             const subjects = await fetchSubjectsForGrade(l.grade_id);
@@ -109,6 +112,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             isComputerScience = isComputerScience || /computer\s*science|computing|ኮምፒውተር/i.test(subjectName);
             isMathematics = isMathematics || /math|ሒሳብ/i.test(subjectName);
             isSocialScience = isSocialScience || /social\s*(?:science|studies)|ማህበራዊ/i.test(subjectName);
+            isCitizenship = isCitizenship || /citizen(?:ship)?|civic|ዜግነት/i.test(subjectName);
             isGradeSixScienceSubject = isGradeSixScienceSubject || /general\s*science|አካባቢ\s*ሳይንስ/i.test(subjectName);
           } catch (error) {
             console.error('Unable to identify lesson subject for formatting:', error);
@@ -128,6 +132,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         setIsGradeEightScience(isGradeEight && isGeneralScience);
         setIsGradeSevenSocialScience(isGradeSeven && isSocialScience);
         setIsGradeEightSocialScience(isGradeEight && isSocialScience);
+        setIsGradeSevenCitizenship(isGradeSeven && isCitizenship);
         setIsGradeSevenEnglish(isGradeSeven && isEnglish);
         setIsGradeEightEnglish(isGradeEight && isEnglish);
         setIsGradeSevenComputerScience(isGradeSeven && isComputerScience);
@@ -314,6 +319,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             highlightGradeEightScience={isGradeEightScience}
             highlightGradeSevenSocialScience={isGradeSevenSocialScience}
             highlightGradeEightSocialScience={isGradeEightSocialScience}
+            highlightGradeSevenCitizenship={isGradeSevenCitizenship}
             highlightGradeSevenEnglish={isGradeSevenEnglish}
             highlightGradeEightEnglish={isGradeEightEnglish}
             highlightGradeSevenComputerScience={isGradeSevenComputerScience}
@@ -385,7 +391,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenMath, highlightGradeEightMath, highlightGradeSevenScience, highlightGradeEightScience, highlightGradeSevenSocialScience, highlightGradeEightSocialScience, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience, highlightGradeEightComputerScience }: {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath, highlightGradeFiveScience, highlightGradeFiveEnglish, highlightGradeFiveComputerScience, highlightGradeSixMath, highlightGradeSixScience, highlightGradeSixComputerScience, highlightGradeSixEnglish, highlightGradeSevenMath, highlightGradeEightMath, highlightGradeSevenScience, highlightGradeEightScience, highlightGradeSevenSocialScience, highlightGradeEightSocialScience, highlightGradeSevenCitizenship, highlightGradeSevenEnglish, highlightGradeEightEnglish, highlightGradeSevenComputerScience, highlightGradeEightComputerScience }: {
   section: LessonContentSection;
   index: number;
   onRead: () => void;
@@ -403,6 +409,7 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
   highlightGradeEightScience: boolean;
   highlightGradeSevenSocialScience: boolean;
   highlightGradeEightSocialScience: boolean;
+  highlightGradeSevenCitizenship: boolean;
   highlightGradeSevenEnglish: boolean;
   highlightGradeEightEnglish: boolean;
   highlightGradeSevenComputerScience: boolean;
@@ -444,6 +451,8 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                     ? splitGradeSevenSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
                   : highlightGradeEightSocialScience
                     ? splitGradeEightSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
+                  : highlightGradeSevenCitizenship
+                    ? splitGradeSevenSocialScience(paragraph).map((block) => ({ ...block, science: block.marker, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: false }))
                   : highlightGradeSixScience
                     ? splitGradeSixScience(paragraph).map((block) => ({ ...block, science: false, english: false, computerScience: false, gradeSixMath: false, gradeSixScience: block.marker }))
                     : highlightGradeSixComputerScience
@@ -462,11 +471,11 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
         return blocks.map((block, blockIndex) => (
           <p
             key={`${paragraphIndex}-${blockIndex}`}
-            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
-            style={highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
+            tabIndex={highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish ? 0 : undefined}
+            style={highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship ? { fontFamily: 'Lora, Georgia, serif' } : undefined}
             className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
-              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
-                ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
+              highlightGradeFiveEnglish || highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience || highlightGradeSevenMath || highlightGradeEightMath || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship || highlightGradeSixEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish
+                ? `${highlightGradeSixEnglish || highlightGradeFiveEnglish || highlightGradeSevenEnglish || highlightGradeEightEnglish || highlightGradeSevenScience || highlightGradeEightScience || highlightGradeSevenSocialScience || highlightGradeEightSocialScience || highlightGradeSevenCitizenship ? 'font-serif' : 'font-sans'} text-[1.05rem] leading-8 tracking-[0.01em] transition-colors rounded-md ${
                   highlightGradeFiveComputerScience || highlightGradeSixComputerScience || highlightGradeSevenComputerScience || highlightGradeEightComputerScience
                     ? 'hover:bg-indigo-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-300'
                     : 'hover:bg-sky-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-300'
@@ -509,15 +518,17 @@ function ContentSection({ section, index, onRead, highlightGradeFiveMath, highli
                   ? renderGradeSixEnglishBlock(block.text, block.kind)
                   : renderGradeFiveEnglishBlock(block.text, block.kind)
               : block.science
-                ? highlightGradeEightSocialScience
-                  ? renderGradeEightSocialScienceBlock(block.text, block.kind)
-                  : highlightGradeSevenSocialScience
-                    ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
-                    : highlightGradeEightScience
-                      ? renderGradeEightScienceBlock(block.text, block.kind)
-                      : highlightGradeSevenScience
-                        ? renderGradeSevenScienceBlock(block.text, block.kind)
-                        : renderScienceBlock(block.text)
+                ? highlightGradeSevenCitizenship
+                  ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
+                  : highlightGradeEightSocialScience
+                    ? renderGradeEightSocialScienceBlock(block.text, block.kind)
+                    : highlightGradeSevenSocialScience
+                      ? renderGradeSevenSocialScienceBlock(block.text, block.kind)
+                      : highlightGradeEightScience
+                        ? renderGradeEightScienceBlock(block.text, block.kind)
+                        : highlightGradeSevenScience
+                          ? renderGradeSevenScienceBlock(block.text, block.kind)
+                          : renderScienceBlock(block.text)
                 : block.marker
                   ? renderIdeaBlock(block.text)
                   : block.text}

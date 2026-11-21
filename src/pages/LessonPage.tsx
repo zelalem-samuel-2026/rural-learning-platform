@@ -7,7 +7,7 @@ import { useStore } from '@/lib/store';
 import { t } from '@/lib/i18n';
 import {
   tr, fetchLesson, fetchLessons, fetchLessonsByChapter, fetchProgress, upsertProgress,
-  fetchSavedLessons, toggleSavedLesson, getDeviceId, formatDuration, difficultyColor,
+  fetchSavedLessons, toggleSavedLesson, fetchSubjectsForGrade, getDeviceId, formatDuration, difficultyColor,
 } from '@/lib/helpers';
 import type { Route, LessonDB, LessonContentSection } from '@/lib/types';
 import { Card } from '@/components/ui/Card';
@@ -34,6 +34,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState(0);
+  const [isGradeFiveGeneralScience, setIsGradeFiveGeneralScience] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -42,6 +43,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
         setLoading(false);
         return;
       }
+      setIsGradeFiveGeneralScience(false);
       try {
         const deviceId = getDeviceId();
         const [l, savedSet, progMap] = await Promise.all([
@@ -50,6 +52,19 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
           fetchProgress(deviceId),
         ]);
         if (!active || !l) return;
+        const isGradeFive = /^(?:grade[-_\s]*)?5$/i.test(l.grade_id.trim());
+        let isGeneralScience = /science|አካባቢ/i.test(l.subject_id);
+        if (isGradeFive && !isGeneralScience) {
+          try {
+            const subjects = await fetchSubjectsForGrade(l.grade_id);
+            const subject = subjects.find((item) => item.id === l.subject_id);
+            isGeneralScience = /general\s*science|አካባቢ\s*ሳይንስ/i.test(`${subject?.name.en || ''} ${subject?.name.am || ''}`);
+          } catch (error) {
+            console.error('Unable to identify lesson subject for formatting:', error);
+          }
+        }
+        if (!active) return;
+        setIsGradeFiveGeneralScience(isGradeFive && isGeneralScience);
         setLesson(l);
         setSaved(savedSet.has(resolvedLessonId));
         const prog = progMap[resolvedLessonId];
@@ -219,7 +234,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             section={section}
             index={i}
             highlightGradeFiveMath={lesson.grade_id === 'grade-5' && /math|ሒሳብ/i.test(lesson.subject_id)}
-            highlightGradeFiveScience={lesson.grade_id === 'grade-5' && /science|አካባቢ/i.test(lesson.subject_id)}
+            highlightGradeFiveScience={isGradeFiveGeneralScience}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -410,12 +425,14 @@ function splitScienceBlocks(paragraph: string): { text: string; marker: boolean;
 }
 
 function renderScienceBlock(text: string) {
-  const labelEnd = text.indexOf('፦');
+  const labelMatch = /፦|:-/.exec(text);
+  const labelEnd = labelMatch?.index ?? -1;
+  const labelLength = labelMatch?.[0].length ?? 0;
   if (labelEnd >= 0 && labelEnd < 64 && !/[።.!?\n]/.test(text.slice(0, labelEnd))) {
     return (
       <>
-        <strong className="underline decoration-emerald-600 underline-offset-2">{text.slice(0, labelEnd + 1)}</strong>
-        {text.slice(labelEnd + 1)}
+        <strong className="underline decoration-emerald-600 underline-offset-2">{text.slice(0, labelEnd + labelLength)}</strong>
+        {text.slice(labelEnd + labelLength)}
       </>
     );
   }

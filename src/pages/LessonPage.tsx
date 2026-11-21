@@ -218,6 +218,7 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
             key={i}
             section={section}
             index={i}
+            highlightGradeFiveMath={lesson.grade_id === 'grade-5' && /math|ሒሳብ/i.test(lesson.subject_id)}
             onRead={() => handleSectionRead(i)}
           />
         ))}
@@ -285,7 +286,12 @@ export function LessonPage({ lessonId, navigate }: LessonPageProps) {
   );
 }
 
-function ContentSection({ section, index, onRead }: { section: LessonContentSection; index: number; onRead: () => void }) {
+function ContentSection({ section, index, onRead, highlightGradeFiveMath }: {
+  section: LessonContentSection;
+  index: number;
+  onRead: () => void;
+  highlightGradeFiveMath: boolean;
+}) {
   const isExample = section.type === 'example';
   return (
     <Card
@@ -299,9 +305,64 @@ function ContentSection({ section, index, onRead }: { section: LessonContentSect
         </span>
       )}
       <h3 className="font-bold text-ink-900 text-lg mb-3">{section.heading}</h3>
-      {section.paragraphs.map((p, j) => (
-        <p key={j} className="text-ink-700 leading-relaxed mb-3 last:mb-0">{p}</p>
-      ))}
+      {section.paragraphs.flatMap((paragraph, paragraphIndex) => {
+        const blocks = highlightGradeFiveMath ? splitIdeaBlocks(paragraph) : [{ text: paragraph, marker: false }];
+        return blocks.map((block, blockIndex) => (
+          <p
+            key={`${paragraphIndex}-${blockIndex}`}
+            className={`text-ink-700 leading-relaxed mb-3 last:mb-0 ${
+              block.marker ? 'mt-5 first:mt-0 rounded-lg border-l-4 border-primary-300 bg-primary-50/60 px-4 py-3' : ''
+            }`}
+          >
+            {block.marker ? renderIdeaBlock(block.text) : block.text}
+          </p>
+        ));
+      })}
     </Card>
+  );
+}
+
+function splitIdeaBlocks(paragraph: string): { text: string; marker: boolean }[] {
+  const markerPattern = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu;
+  const starts: number[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = markerPattern.exec(paragraph)) !== null) {
+    const index = match.index;
+    if (index === 0 || /\s/.test(paragraph[index - 1])) starts.push(index);
+  }
+  if (starts.length === 0) return [{ text: paragraph, marker: false }];
+
+  const blocks: { text: string; marker: boolean }[] = [];
+  if (starts[0] > 0) blocks.push({ text: paragraph.slice(0, starts[0]), marker: false });
+  starts.forEach((start, index) => {
+    const end = starts[index + 1] ?? paragraph.length;
+    blocks.push({ text: paragraph.slice(start, end), marker: true });
+  });
+  return blocks;
+}
+
+function renderIdeaBlock(text: string) {
+  const markerMatch = text.match(/^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/u);
+  if (!markerMatch) return text;
+
+  const emoji = markerMatch[0];
+  const afterEmoji = text.slice(emoji.length);
+  const labelOptions = ['ቁልፍ ሀሳብ', 'Key idea', 'Key point', 'አስታውሱ', 'ለምን?', 'ምሳሌ', 'Remember', 'Example', 'Why?', 'Note'];
+  const label = labelOptions.find((option) => afterEmoji.trimStart().startsWith(option));
+  const labelStart = afterEmoji.length - afterEmoji.trimStart().length;
+  const labelEnd = label ? labelStart + label.length : (() => {
+    const firstWord = afterEmoji.slice(labelStart).match(/^[^\s]+/);
+    return labelStart + (firstWord?.[0].length || 0);
+  })();
+
+  return (
+    <>
+      <span className="font-bold underline decoration-primary-500 underline-offset-2">{emoji}</span>
+      {afterEmoji.slice(0, labelStart)}
+      <strong className="underline decoration-primary-500 underline-offset-2">
+        {afterEmoji.slice(labelStart, labelEnd)}
+      </strong>
+      {afterEmoji.slice(labelEnd)}
+    </>
   );
 }

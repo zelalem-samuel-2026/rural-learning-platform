@@ -16,6 +16,26 @@ interface HomePageProps {
   navigate: (r: Route) => void;
 }
 
+const heroImages = [
+  '/images/image 1.jpg',
+  '/images/image 2.jpg',
+  '/images/image 3.jpg',
+  '/images/image 4.jpg',
+  '/images/image 5.jpg',
+  '/images/image 6.jpg',
+  '/images/image 7.jpg',
+  '/images/image 8.jpg',
+  '/images/image 9.jpg',
+  '/images/image 10.jpg',
+  '/images/image 11.jpg',
+  '/images/image 12.jpg',
+  '/images/image 13.jpg',
+  '/images/image 15.jpg',
+  '/images/image 16.jpg',
+  '/images/image 17.jpg',
+  '/images/image 18.png',
+];
+
 export function HomePage({ navigate }: HomePageProps) {
   const { lang } = useStore();
   const dict = t(lang);
@@ -27,7 +47,6 @@ export function HomePage({ navigate }: HomePageProps) {
 
   // States for Hero Carousel
   const [currentSlide, setCurrentSlide] = useState(0);
-  const heroImages = ['/images/hero-1.webp', '/images/hero-2.webp'];
 
   // Fetch Data Effect
   useEffect(() => {
@@ -48,7 +67,7 @@ export function HomePage({ navigate }: HomePageProps) {
   // Carousel Auto-Slide Effect
   useEffect(() => {
     const slideInterval = setInterval(() => {
-      setCurrentSlide((prev) => (prev === 1 ? 0 : 1));
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
     }, 4000);
     return () => clearInterval(slideInterval);
   }, []);
@@ -80,10 +99,10 @@ export function HomePage({ navigate }: HomePageProps) {
   return (
     <div className="animate-fade-in">
       {/* Hero Section — Fullscreen Background Carousel */}
-      <section className="relative overflow-hidden min-h-[80vh] sm:min-h-[620px] sm:h-[620px] flex items-center justify-center bg-ink-900">
+      <section className="relative overflow-hidden min-h-[85vh] sm:min-h-[680px] sm:h-[680px] flex items-center justify-center bg-ink-900">
         
         {/* Absolute Background Image Carousel */}
-        <div className="absolute inset-0 z-0 min-h-[80vh] sm:min-h-[620px] sm:h-[620px]">
+        <div className="absolute inset-0 z-0 min-h-[85vh] sm:min-h-[680px] sm:h-[680px]">
           {heroImages.map((src, index) => (
             <img
               key={src}

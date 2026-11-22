@@ -161,7 +161,7 @@ export function HomePage({ navigate }: HomePageProps) {
               {[
                 { value: '2,400+', label: dict.home.studentsCount },
                 { value: '885+', label: dict.home.lessonsCount },
-                { value: '14125+', label: dict.home.quizQuestionsCount },
+                { value: '14,125+', label: dict.home.quizQuestionsCount },
                 { value: '100%', label: dict.home.offlineLabel },
               ].map((s) => (
                 <div key={s.label} className="text-center lg:text-left">

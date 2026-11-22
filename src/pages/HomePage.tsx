@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  ArrowRight, Sparkles, WifiOff, Accessibility, Brain, Languages,
+  ArrowRight, ChevronLeft, ChevronRight, Sparkles, WifiOff, Accessibility, Brain, Languages,
   GraduationCap,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -116,19 +116,22 @@ export function HomePage({ navigate }: HomePageProps) {
           ))}
         </div>
 
-        {/* Carousel Indicators (Dots) */}
-        <div className="absolute bottom-5 left-0 right-0 flex justify-center gap-2 z-10">
-          {heroImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`h-2.5 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/70'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
+          className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-ink-950/25 text-white/90 backdrop-blur-sm transition-colors hover:bg-ink-950/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setCurrentSlide((prev) => (prev + 1) % heroImages.length)}
+          className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-ink-950/25 text-white/90 backdrop-blur-sm transition-colors hover:bg-ink-950/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden="true" />
+        </button>
       </section>
 
       <section className="bg-white">

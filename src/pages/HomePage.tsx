@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight, ChevronLeft, ChevronRight, Sparkles, WifiOff, Accessibility, Brain, Languages,
   GraduationCap,
@@ -47,6 +47,8 @@ export function HomePage({ navigate }: HomePageProps) {
 
   // States for Hero Carousel
   const [currentSlide, setCurrentSlide] = useState(0);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const statsAnimationStartedRef = useRef(false);
 
   // Fetch Data Effect
   useEffect(() => {
@@ -70,6 +72,73 @@ export function HomePage({ navigate }: HomePageProps) {
       setCurrentSlide((prev) => (prev + 1) % heroImages.length);
     }, 4000);
     return () => clearInterval(slideInterval);
+  }, []);
+
+  useEffect(() => {
+    const statsElement = statsRef.current;
+    if (!statsElement || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const formatter = new Intl.NumberFormat('en-US');
+    const stats = Array.from(statsElement.querySelectorAll<HTMLElement>('[data-stat-value]')).map((element) => {
+      const finalValue = element.textContent ?? '';
+      const target = Number(finalValue.replace(/[^\d]/g, ''));
+      const suffix = finalValue.replace(/[\d,]/g, '');
+      element.textContent = `0${suffix}`;
+      return { element, finalValue, target, suffix };
+    });
+
+    if (stats.length === 0) return;
+
+    let observer: IntersectionObserver | null = null;
+    let animationFrame: number | null = null;
+    let cancelled = false;
+
+    const animateStats = () => {
+      if (statsAnimationStartedRef.current) return;
+      statsAnimationStartedRef.current = true;
+
+      const duration = 950;
+      let startTime: number | null = null;
+      const animateFrame = (timestamp: number) => {
+        if (cancelled) return;
+        if (startTime === null) startTime = timestamp;
+
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+        stats.forEach(({ element, finalValue, target, suffix }) => {
+          element.textContent = progress === 1
+            ? finalValue
+            : `${formatter.format(Math.round(target * easedProgress))}${suffix}`;
+        });
+
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animateFrame);
+        } else {
+          animationFrame = null;
+        }
+      };
+
+      animationFrame = requestAnimationFrame(animateFrame);
+    };
+
+    if ('IntersectionObserver' in window) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          observer?.disconnect();
+          animateStats();
+        }
+      }, { threshold: 0.2 });
+      observer.observe(statsElement);
+    } else {
+      animateStats();
+    }
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+    };
   }, []);
 
   // Grade Specific 3D Images mapping for Grades 5, 6, 7, 8
@@ -203,7 +272,7 @@ export function HomePage({ navigate }: HomePageProps) {
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 max-w-2xl mx-auto lg:mx-0 pt-6 border-t border-ink-200">
+            <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 max-w-2xl mx-auto lg:mx-0 pt-6 border-t border-ink-200">
               {[
                 { value: '2,400+', label: dict.home.studentsCount },
                 { value: '885+', label: dict.home.lessonsCount },
@@ -211,7 +280,7 @@ export function HomePage({ navigate }: HomePageProps) {
                 { value: '100%', label: dict.home.offlineLabel },
               ].map((s) => (
                 <div key={s.label} className="text-center lg:text-left">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-ink-900">{s.value}</p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-ink-900"><span data-stat-value>{s.value}</span></p>
                   <p className="text-xs text-ink-500 mt-0.5">{s.label}</p>
                 </div>
               ))}

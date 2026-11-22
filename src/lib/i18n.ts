@@ -38,7 +38,7 @@ const en = {
   home: {
     badge: 'Free · Offline-friendly · Bilingual',
     heroTitle: 'Your journey to knowledge starts here',
-    heroSubtitle: 'Learn at your own pace with simple lessons, practice quizzes, and clear progress. Built for students in rural Ethiopia — works even with slow internet.',
+    heroSubtitle: 'Learn at your own pace with simple lessons, practice quizzes, and clear progress. Built for elementary school students in Ethiopia — works even with slow internet.',
     heroCta: 'Choose your grade',
     heroCta2: 'See my progress',
     chooseGrade: 'Choose your grade',

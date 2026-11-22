@@ -119,7 +119,7 @@ export function HomePage({ navigate }: HomePageProps) {
         <button
           type="button"
           onClick={() => setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
-          className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-ink-950/25 text-white/90 backdrop-blur-sm transition-colors hover:bg-ink-950/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          className="absolute left-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-white/70 drop-shadow-sm transition-colors hover:bg-white/10 hover:text-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           aria-label="Previous slide"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -127,7 +127,7 @@ export function HomePage({ navigate }: HomePageProps) {
         <button
           type="button"
           onClick={() => setCurrentSlide((prev) => (prev + 1) % heroImages.length)}
-          className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-ink-950/25 text-white/90 backdrop-blur-sm transition-colors hover:bg-ink-950/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          className="absolute right-4 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-white/70 drop-shadow-sm transition-colors hover:bg-white/10 hover:text-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           aria-label="Next slide"
         >
           <ChevronRight className="h-5 w-5" aria-hidden="true" />

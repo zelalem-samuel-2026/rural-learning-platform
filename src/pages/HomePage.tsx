@@ -81,6 +81,52 @@ export function HomePage({ navigate }: HomePageProps) {
     return null;
   };
 
+  const getGradeCardStyles = (gradeName: string) => {
+    if (gradeName.includes('5')) {
+      return {
+        card: 'bg-gradient-to-br from-[#E8F8F3] to-[#CFF1E7] border-[#159B83]/30 hover:border-[#159B83]/60 shadow-[0_10px_26px_-16px_rgba(21,155,131,0.32)] hover:shadow-[0_16px_34px_-14px_rgba(21,155,131,0.36)]',
+        glow: 'before:bg-[radial-gradient(circle,#CFF1E7_0%,transparent_72%)]',
+        title: 'group-hover:text-[#159B83]',
+        details: 'bg-white/60 text-[#52756D]',
+        button: 'bg-[#CFF1E7] text-[#0F6F5D] group-hover:bg-[#BCEBDD] group-hover:shadow-[0_4px_12px_-4px_rgba(21,155,131,0.3)]',
+      };
+    }
+    if (gradeName.includes('6')) {
+      return {
+        card: 'bg-gradient-to-br from-[#F1EAFE] to-[#E4D7FA] border-[#8055CE]/30 hover:border-[#8055CE]/60 shadow-[0_10px_26px_-16px_rgba(128,85,206,0.30)] hover:shadow-[0_16px_34px_-14px_rgba(128,85,206,0.34)]',
+        glow: 'before:bg-[radial-gradient(circle,#E4D7FA_0%,transparent_72%)]',
+        title: 'group-hover:text-[#8055CE]',
+        details: 'bg-white/60 text-[#695A84]',
+        button: 'bg-[#E4D7FA] text-[#60409B] group-hover:bg-[#D8C6F2] group-hover:shadow-[0_4px_12px_-4px_rgba(128,85,206,0.28)]',
+      };
+    }
+    if (gradeName.includes('7')) {
+      return {
+        card: 'bg-gradient-to-br from-[#EAF4FF] to-[#D5E9FF] border-[#2879C8]/30 hover:border-[#2879C8]/60 shadow-[0_10px_26px_-16px_rgba(40,121,200,0.30)] hover:shadow-[0_16px_34px_-14px_rgba(40,121,200,0.34)]',
+        glow: 'before:bg-[radial-gradient(circle,#D5E9FF_0%,transparent_72%)]',
+        title: 'group-hover:text-[#2879C8]',
+        details: 'bg-white/60 text-[#526C87]',
+        button: 'bg-[#D5E9FF] text-[#205D9A] group-hover:bg-[#C3DFFF] group-hover:shadow-[0_4px_12px_-4px_rgba(40,121,200,0.28)]',
+      };
+    }
+    if (gradeName.includes('8')) {
+      return {
+        card: 'bg-gradient-to-br from-[#F1F7E5] to-[#E0EDC8] border-[#557D2D]/30 hover:border-[#557D2D]/60 shadow-[0_10px_26px_-16px_rgba(85,125,45,0.30)] hover:shadow-[0_16px_34px_-14px_rgba(85,125,45,0.34)]',
+        glow: 'before:bg-[radial-gradient(circle,#E0EDC8_0%,transparent_72%)]',
+        title: 'group-hover:text-[#557D2D]',
+        details: 'bg-white/60 text-[#64734F]',
+        button: 'bg-[#E0EDC8] text-[#45651F] group-hover:bg-[#D3E5B5] group-hover:shadow-[0_4px_12px_-4px_rgba(85,125,45,0.28)]',
+      };
+    }
+    return {
+      card: 'bg-white border-ink-200/50 hover:border-primary-300 shadow-md hover:shadow-2xl',
+      glow: '',
+      title: 'group-hover:text-primary-600',
+      details: 'bg-ink-50 text-ink-500',
+      button: 'bg-primary-50 text-primary-600 group-hover:bg-primary-600 group-hover:text-white group-hover:shadow-primary-500/30',
+    };
+  };
+
   // Subject Specific 3D Images mapping
   const getSubjectImage = (subjectId: string, subjectName: string) => {
     const id = subjectId.toLowerCase();
@@ -189,16 +235,17 @@ export function HomePage({ navigate }: HomePageProps) {
               {grades.map((g) => {
                 const name = tr(g.name, lang);
                 const imgPath = getGradeImage(name);
+                const gradeStyles = getGradeCardStyles(name);
 
                 return (
                   <Card
                     key={g.id}
                     hoverable
                     onClick={() => navigate({ name: 'grade', id: g.id })}
-                    className="p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:border-primary-300 border border-ink-200/50 bg-white rounded-3xl cursor-pointer shadow-md"
+                    className={`p-6 flex flex-col items-center text-center gap-4 group transition-all duration-300 hover:-translate-y-1 border rounded-3xl cursor-pointer motion-reduce:transition-none motion-reduce:transform-none motion-reduce:hover:translate-y-0 ${gradeStyles.card}`}
                   >
                     {/* 3D Image Display or Fallback Icon */}
-                    <div className="w-28 h-28 flex items-center justify-center group-hover:scale-110 transition-transform duration-500 ease-out mb-1">
+                    <div className={`relative isolate w-28 h-28 flex items-center justify-center motion-safe:group-hover:scale-110 transition-transform duration-500 ease-out mb-1 motion-reduce:transition-none before:pointer-events-none before:absolute before:left-1/2 before:top-1/2 before:-z-10 before:h-24 before:w-24 before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:blur-xl before:opacity-80 before:content-[''] ${gradeStyles.glow}`}>
                       {imgPath ? (
                         <img
                           src={imgPath}
@@ -219,15 +266,15 @@ export function HomePage({ navigate }: HomePageProps) {
                     </div>
 
                     <div className="space-y-1.5">
-                      <h3 className="text-2xl font-black text-ink-900 group-hover:text-primary-600 transition-colors">
+                      <h3 className={`text-2xl font-black text-ink-900 ${gradeStyles.title} transition-colors`}>
                         {name}
                       </h3>
-                      <p className="text-xs font-medium text-ink-500 bg-ink-50 px-2.5 py-1 rounded-full inline-block">
+                      <p className={`text-xs font-medium px-2.5 py-1 rounded-full inline-block ${gradeStyles.details}`}>
                         {subjects.length} Subjects • Practice
                       </p>
                     </div>
 
-                    <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-600 px-4 py-2 rounded-full text-xs font-bold mt-2 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-primary-500/30">
+                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold mt-2 transition-all duration-300 shadow-sm ${gradeStyles.button}`}>
                       {dict.common.start}
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
                     </span>

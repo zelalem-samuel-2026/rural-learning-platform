@@ -97,7 +97,7 @@ export function HomePage({ navigate }: HomePageProps) {
       if (statsAnimationStartedRef.current) return;
       statsAnimationStartedRef.current = true;
 
-      const duration = 950;
+      const duration = 2700;
       let startTime: number | null = null;
       const animateFrame = (timestamp: number) => {
         if (cancelled) return;
@@ -274,13 +274,13 @@ export function HomePage({ navigate }: HomePageProps) {
             {/* Stats Row */}
             <div ref={statsRef} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 max-w-2xl mx-auto lg:mx-0 pt-6 border-t border-ink-200">
               {[
-                { value: '2,400+', label: dict.home.studentsCount },
-                { value: '885+', label: dict.home.lessonsCount },
-                { value: '14,125+', label: dict.home.quizQuestionsCount },
-                { value: '100%', label: dict.home.offlineLabel },
+                { value: '2,400+', label: dict.home.studentsCount, color: '#109880' },
+                { value: '885+', label: dict.home.lessonsCount, color: '#8050C8' },
+                { value: '14,125+', label: dict.home.quizQuestionsCount, color: '#2878C0' },
+                { value: '100%', label: dict.home.offlineLabel, color: '#507828' },
               ].map((s) => (
                 <div key={s.label} className="text-center lg:text-left">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-ink-900"><span data-stat-value>{s.value}</span></p>
+                  <p className="text-2xl sm:text-3xl font-extrabold text-ink-900"><span data-stat-value style={{ color: s.color }}>{s.value}</span></p>
                   <p className="text-xs text-ink-500 mt-0.5">{s.label}</p>
                 </div>
               ))}

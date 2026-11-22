@@ -98,63 +98,22 @@ export function HomePage({ navigate }: HomePageProps) {
 
   return (
     <div className="animate-fade-in">
-      {/* Hero Section — Fullscreen Background Carousel */}
+      {/* Hero Image Carousel */}
       <section className="relative overflow-hidden min-h-[85vh] sm:min-h-[680px] sm:h-[680px] flex items-center justify-center bg-ink-900">
         
-        {/* Absolute Background Image Carousel */}
+        {/* Carousel Images */}
         <div className="absolute inset-0 z-0 min-h-[85vh] sm:min-h-[680px] sm:h-[680px]">
           {heroImages.map((src, index) => (
             <img
               key={src}
               src={src}
-              alt={`${dict.home.heroTitle} - Background Slide ${index + 1}`}
+              alt={`Welcome to Lerna Learning Platform - Slide ${index + 1}`}
               className={`absolute inset-0 w-full h-full object-cover bg-cover bg-center transition-opacity duration-1000 ease-in-out ${
                 index === currentSlide ? 'opacity-100' : 'opacity-0'
               }`}
               loading={index === 0 ? "eager" : "lazy"}
             />
           ))}
-
-          {/* Dark Overlay for Readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-ink-950/85 via-ink-950/70 to-ink-950/40 sm:from-ink-950/90 sm:via-ink-950/75 sm:to-ink-950/30" />
-        </div>
-
-        {/* Foreground Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 w-full">
-          <div className="max-w-2xl text-center lg:text-left">
-            <span className="inline-flex items-center gap-1.5 bg-primary-500/20 text-primary-200 border border-primary-400/30 backdrop-blur-md px-3.5 py-1.5 rounded-full text-sm font-semibold mb-6">
-              <Sparkles className="w-4 h-4 text-primary-300" />
-              {dict.home.badge}
-            </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-white leading-[1.15] mb-6 text-balance drop-shadow-sm">
-              {dict.home.heroTitle}
-            </h1>
-            <p className="text-lg text-ink-100 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0 drop-shadow">
-              {dict.home.heroSubtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <Button size="lg" onClick={() => navigate({ name: 'home' })} rightIcon={<ArrowRight className="w-5 h-5" />}>
-                {dict.home.heroCta}
-              </Button>
-              <Button size="lg" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-md" onClick={() => navigate({ name: 'dashboard' })}>
-                {dict.home.heroCta2}
-              </Button>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4 mt-10 max-w-md mx-auto lg:mx-0 pt-6 border-t border-white/15">
-              {[
-                { value: '2,400+', label: dict.home.studentsCount },
-                { value: '6+', label: dict.home.lessonsCount },
-                { value: '100%', label: dict.home.offlineLabel },
-              ].map((s) => (
-                <div key={s.label} className="text-center lg:text-left">
-                  <p className="text-2xl sm:text-3xl font-extrabold text-white">{s.value}</p>
-                  <p className="text-xs text-ink-200 mt-0.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Carousel Indicators (Dots) */}
@@ -169,6 +128,45 @@ export function HomePage({ navigate }: HomePageProps) {
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
+        </div>
+      </section>
+
+      <section className="bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <div className="max-w-2xl text-center lg:text-left">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-ink-900 leading-[1.15] mb-6 text-balance">
+              Welcome to Lerna Learning Platform
+            </h1>
+            <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 border border-primary-200 px-3.5 py-1.5 rounded-full text-sm font-semibold mb-6">
+              <Sparkles className="w-4 h-4 text-primary-600" />
+              {dict.home.badge}
+            </span>
+            <p className="text-lg text-ink-700 leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
+              {dict.home.heroSubtitle}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+              <Button size="lg" onClick={() => navigate({ name: 'home' })} rightIcon={<ArrowRight className="w-5 h-5" />}>
+                {dict.home.heroCta}
+              </Button>
+              <Button size="lg" variant="outline" className="bg-white text-ink-900 border-ink-300 hover:bg-ink-50" onClick={() => navigate({ name: 'dashboard' })}>
+                {dict.home.heroCta2}
+              </Button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-4 mt-10 max-w-md mx-auto lg:mx-0 pt-6 border-t border-ink-200">
+              {[
+                { value: '2,400+', label: dict.home.studentsCount },
+                { value: '6+', label: dict.home.lessonsCount },
+                { value: '100%', label: dict.home.offlineLabel },
+              ].map((s) => (
+                <div key={s.label} className="text-center lg:text-left">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-ink-900">{s.value}</p>
+                  <p className="text-xs text-ink-500 mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

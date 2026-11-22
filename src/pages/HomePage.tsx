@@ -157,10 +157,11 @@ export function HomePage({ navigate }: HomePageProps) {
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4 mt-10 max-w-md mx-auto lg:mx-0 pt-6 border-t border-ink-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10 max-w-2xl mx-auto lg:mx-0 pt-6 border-t border-ink-200">
               {[
                 { value: '2,400+', label: dict.home.studentsCount },
-                { value: '6+', label: dict.home.lessonsCount },
+                { value: '885+', label: dict.home.lessonsCount },
+                { value: '14125+', label: dict.home.quizQuestionsCount },
                 { value: '100%', label: dict.home.offlineLabel },
               ].map((s) => (
                 <div key={s.label} className="text-center lg:text-left">

@@ -60,6 +60,7 @@ const en = {
     ctaButton: 'Start learning',
     studentsCount: 'Students',
     lessonsCount: 'Lessons',
+    quizQuestionsCount: 'Quiz questions',
     offlineLabel: 'Offline ready',
   },
 
@@ -335,6 +336,7 @@ const am: Dict = {
     ctaButton: 'ትምህርት ጀምር',
     studentsCount: 'ተማሪዎች',
     lessonsCount: 'ትምህርቶች',
+    quizQuestionsCount: 'የፈተና ጥያቄዎች',
     offlineLabel: 'ከመስመር ውጭ',
   },
 

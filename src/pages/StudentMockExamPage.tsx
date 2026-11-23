@@ -26,6 +26,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
   // Exam Progress State
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [questionId: string]: 'A' | 'B' | 'C' | 'D' }>({});
+  const [skippedQuestionIds, setSkippedQuestionIds] = useState<Set<string>>(new Set());
   const [timeSpentSeconds, setTimeSpentSeconds] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -81,6 +82,40 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
       ...prev,
       [questionId]: option,
     }));
+    setSkippedQuestionIds((prev) => {
+      if (!prev.has(questionId)) return prev;
+      const next = new Set(prev);
+      next.delete(questionId);
+      return next;
+    });
+  };
+
+  const markUnansweredQuestionsSkipped = (questionIds: string[]) => {
+    const unansweredIds = questionIds.filter((questionId) => !selectedAnswers[questionId]);
+    if (unansweredIds.length === 0) return;
+    setSkippedQuestionIds((prev) => new Set([...prev, ...unansweredIds]));
+  };
+
+  const handlePreviousQuestion = () => {
+    const currentQuestion = questions[currentQuestionIdx];
+    if (currentQuestion) markUnansweredQuestionsSkipped([currentQuestion.id]);
+    setCurrentQuestionIdx((prev) => prev - 1);
+  };
+
+  const handleNextQuestion = () => {
+    const currentQuestion = questions[currentQuestionIdx];
+    if (currentQuestion) markUnansweredQuestionsSkipped([currentQuestion.id]);
+    setCurrentQuestionIdx((prev) => prev + 1);
+  };
+
+  const handleJumpToQuestion = (targetIdx: number) => {
+    if (targetIdx !== currentQuestionIdx) {
+      const passedQuestions = targetIdx > currentQuestionIdx
+        ? questions.slice(currentQuestionIdx, targetIdx).map((question) => question.id)
+        : [questions[currentQuestionIdx]?.id].filter((id): id is string => !!id);
+      markUnansweredQuestionsSkipped(passedQuestions);
+    }
+    setCurrentQuestionIdx(targetIdx);
   };
 
   // Instant Score Calculation & Submission
@@ -304,6 +339,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
               onClick={() => {
                 setIsSubmitted(false);
                 setSelectedAnswers({});
+                setSkippedQuestionIds(new Set());
                 setTimeSpentSeconds(0);
                 setCurrentQuestionIdx(0);
                 setShowReviewMode(false);
@@ -484,7 +520,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
         <div className="mt-8 flex items-center justify-between gap-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <button
             disabled={currentQuestionIdx === 0}
-            onClick={() => setCurrentQuestionIdx((prev) => prev - 1)}
+            onClick={handlePreviousQuestion}
             className="px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold text-xs flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -502,7 +538,7 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
             </button>
           ) : (
             <button
-              onClick={() => setCurrentQuestionIdx((prev) => prev + 1)}
+              onClick={handleNextQuestion}
               className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 transition-all"
             >
               <span>ቀጣይ</span>
@@ -513,30 +549,60 @@ export const StudentMockExamPage: React.FC<StudentMockExamPageProps> = ({ route,
       </div>
 
       {/* Question Palette / Number Grid */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700">
-        <span className="block text-xs font-bold text-gray-500 mb-3">የጥያቄዎች ሁኔታ፦</span>
-        <div className="flex flex-wrap gap-2">
+      <div className="rounded-2xl border border-teal-100 bg-slate-50/90 p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/90">
+        <span className="mb-3 block text-xs font-bold text-slate-600 dark:text-gray-300">የጥያቄዎች ሁኔታ፦</span>
+        <div className="flex flex-wrap gap-2.5">
           {questions.map((q, idx) => {
             const isAnswered = !!selectedAnswers[q.id];
             const isCurrent = idx === currentQuestionIdx;
+            const isSkipped = skippedQuestionIds.has(q.id) && !isAnswered && !isCurrent;
 
-            let btnStyle = 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+            let btnStyle = 'border border-slate-200 bg-slate-100 text-slate-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300';
             if (isCurrent) {
-              btnStyle = 'ring-2 ring-blue-600 font-bold bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100';
+              btnStyle = 'z-10 border-2 border-blue-500 bg-blue-50 font-bold text-blue-700 shadow-sm ring-4 ring-blue-100 dark:border-blue-400 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900/50';
             } else if (isAnswered) {
-              btnStyle = 'bg-emerald-100 text-emerald-800 font-bold dark:bg-emerald-950 dark:text-emerald-300';
+              btnStyle = 'border border-emerald-200 bg-emerald-100 font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300';
+            } else if (isSkipped) {
+              btnStyle = 'border border-rose-200 bg-rose-100 font-bold text-rose-700 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300';
             }
 
             return (
               <button
                 key={q.id}
-                onClick={() => setCurrentQuestionIdx(idx)}
-                className={`w-9 h-9 rounded-xl text-xs flex items-center justify-center transition-all ${btnStyle}`}
+                onClick={() => handleJumpToQuestion(idx)}
+                aria-label={`ጥያቄ ${idx + 1}: ${isCurrent ? 'አሁን' : isAnswered ? 'መልስ ተሰጥቷል' : isSkipped ? 'ያልተመለሰ ተዘሏል' : 'ያልተጎበኘ'}`}
+                aria-current={isCurrent ? 'step' : undefined}
+                title={isCurrent ? 'Current' : isAnswered ? 'Answered' : isSkipped ? 'Skipped' : 'Not visited'}
+                className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${btnStyle}`}
               >
                 {idx + 1}
+                {isAnswered && (
+                  <CheckCircle2 className="absolute -right-1 -top-1 h-3.5 w-3.5 fill-white text-emerald-600 dark:fill-gray-900 dark:text-emerald-400" aria-hidden="true" />
+                )}
+                {isSkipped && (
+                  <XCircle className="absolute -right-1 -top-1 h-3.5 w-3.5 fill-white text-rose-600 dark:fill-gray-900 dark:text-rose-400" aria-hidden="true" />
+                )}
               </button>
             );
           })}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-200 pt-3 text-[11px] font-medium text-slate-600 dark:border-gray-700 dark:text-gray-300">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            መልስ ተሰጥቷል / Answered
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-blue-500" aria-hidden="true" />
+            አሁን / Current
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-500" aria-hidden="true" />
+            ያልተመለሰ ተዘሏል / Skipped
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-slate-400" aria-hidden="true" />
+            ያልተጎበኘ / Not visited
+          </span>
         </div>
       </div>
     </div>

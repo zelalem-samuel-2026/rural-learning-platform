@@ -157,7 +157,7 @@ export function HomePage({ navigate }: HomePageProps) {
         glow: 'before:bg-[radial-gradient(circle,#CFF1E7_0%,transparent_72%)]',
         title: 'group-hover:text-[#159B83]',
         details: 'bg-white/60 text-[#52756D]',
-        button: 'bg-[#CFF1E7] text-[#0F6F5D] group-hover:bg-[#BCEBDD] group-hover:shadow-[0_4px_12px_-4px_rgba(21,155,131,0.3)]',
+        button: 'bg-[#14532D] group-hover:bg-[#104324] group-hover:shadow-[0_4px_12px_-4px_rgba(20,83,45,0.42)]',
       };
     }
     if (gradeName.includes('6')) {
@@ -166,7 +166,7 @@ export function HomePage({ navigate }: HomePageProps) {
         glow: 'before:bg-[radial-gradient(circle,#E4D7FA_0%,transparent_72%)]',
         title: 'group-hover:text-[#8055CE]',
         details: 'bg-white/60 text-[#695A84]',
-        button: 'bg-[#E4D7FA] text-[#60409B] group-hover:bg-[#D8C6F2] group-hover:shadow-[0_4px_12px_-4px_rgba(128,85,206,0.28)]',
+        button: 'bg-[#6840A5] group-hover:bg-[#58368F] group-hover:shadow-[0_4px_12px_-4px_rgba(104,64,165,0.42)]',
       };
     }
     if (gradeName.includes('7')) {
@@ -175,7 +175,7 @@ export function HomePage({ navigate }: HomePageProps) {
         glow: 'before:bg-[radial-gradient(circle,#D5E9FF_0%,transparent_72%)]',
         title: 'group-hover:text-[#2879C8]',
         details: 'bg-white/60 text-[#526C87]',
-        button: 'bg-[#D5E9FF] text-[#205D9A] group-hover:bg-[#C3DFFF] group-hover:shadow-[0_4px_12px_-4px_rgba(40,121,200,0.28)]',
+        button: 'bg-[#1F66AE] group-hover:bg-[#195794] group-hover:shadow-[0_4px_12px_-4px_rgba(31,102,174,0.42)]',
       };
     }
     if (gradeName.includes('8')) {
@@ -184,7 +184,7 @@ export function HomePage({ navigate }: HomePageProps) {
         glow: 'before:bg-[radial-gradient(circle,#E0EDC8_0%,transparent_72%)]',
         title: 'group-hover:text-[#557D2D]',
         details: 'bg-white/60 text-[#64734F]',
-        button: 'bg-[#E0EDC8] text-[#45651F] group-hover:bg-[#D3E5B5] group-hover:shadow-[0_4px_12px_-4px_rgba(85,125,45,0.28)]',
+        button: 'bg-[#047857] group-hover:bg-[#036749] group-hover:shadow-[0_4px_12px_-4px_rgba(4,120,87,0.42)]',
       };
     }
     return {
@@ -343,7 +343,7 @@ export function HomePage({ navigate }: HomePageProps) {
                       </p>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-current/20 text-xs font-bold mt-2 transition-all duration-300 shadow-md cursor-pointer ${gradeStyles.button}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-current/20 text-xs font-bold text-white mt-2 transition-all duration-300 shadow-md cursor-pointer ${gradeStyles.button}`}>
                       {dict.common.start}
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
                     </span>

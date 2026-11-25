@@ -343,7 +343,7 @@ export function HomePage({ navigate }: HomePageProps) {
                       </p>
                     </div>
 
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold mt-2 transition-all duration-300 shadow-sm ${gradeStyles.button}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-current/20 text-xs font-bold mt-2 transition-all duration-300 shadow-md cursor-pointer ${gradeStyles.button}`}>
                       {dict.common.start}
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1.5 transition-transform" />
                     </span>

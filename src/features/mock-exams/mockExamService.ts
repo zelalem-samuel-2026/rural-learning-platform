@@ -53,7 +53,7 @@ export const mockExamService = {
       console.error('Error fetching admin exams:', error);
       throw error;
     }
-    return newestFirst(await addQuestionCounts(data || []));
+    return newestFirst(data || []);
   },
 
   async getExamById(id: string): Promise<PracticeExam | null> {

@@ -69,9 +69,7 @@ export const MockExamsHomePage: React.FC<MockExamsHomePageProps> = ({ navigate }
 
   // በትምህርት አይነት የመጨረሻ ፊልተር ማድረግ
   const displayedExams = exams.filter((exam) => {
-    if (exam.grade_id !== selectedGrade || !subjects.some((subject) => subject.id === exam.subject_id)) {
-      return false;
-    }
+    if (exam.grade_id !== selectedGrade) return false;
     if (selectedSubjectId === 'all') return true;
     return exam.subject_id === selectedSubjectId;
   });
